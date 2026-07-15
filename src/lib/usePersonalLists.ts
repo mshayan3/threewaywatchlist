@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { parseYear } from "@/lib/helpers";
+import { fetchMovieMeta } from "@/lib/tmdb";
 import { useToast } from "@/components/Toast";
 import type { AppUser, PersonalMovie, TmdbResult, WatchedRow, WatchlistRow } from "@/lib/types";
 
@@ -21,6 +22,42 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
 
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+
+  // tmdb_ids we've already attempted a rating/genre backfill for this session,
+  // so we never re-hit TMDB for a movie TMDB genuinely has no data on.
+  const backfillTried = useRef<Set<number>>(new Set());
+
+  // Legacy rows added before rating/genre were captured come back with
+  // rating 0 / empty genre. Lazily re-fetch those from TMDB once, write them
+  // back to the DB, and patch local state. Group cards pick the ratings up via
+  // the group_movies RPC on their next refresh (onChange).
+  const backfillMeta = useCallback(
+    async (items: { tmdbId: number; table: "watchlist" | "watched" }[]) => {
+      if (!user || items.length === 0) return;
+      let changed = false;
+      await Promise.all(
+        items.map(async ({ tmdbId, table }) => {
+          const meta = await fetchMovieMeta(tmdbId);
+          if (!meta || (meta.rating <= 0 && !meta.genre)) return;
+          await supabase
+            .from(table)
+            .update({ rating: meta.rating, genre: meta.genre })
+            .match({ user_id: user.id, tmdb_id: tmdbId });
+          const patch = (arr: PersonalMovie[]) =>
+            arr.map((m) =>
+              m.tmdbId === tmdbId
+                ? { ...m, rating: meta.rating || m.rating, genre: meta.genre || m.genre }
+                : m
+            );
+          setWatchlist(patch);
+          setWatchedList(patch);
+          changed = true;
+        })
+      );
+      if (changed) onChangeRef.current?.();
+    },
+    [user]
+  );
 
   const reload = useCallback(async () => {
     if (!user) return;
@@ -47,9 +84,25 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
       at,
       watchCount: counts.get(r.tmdb_id) ?? 0,
     });
-    setWatchlist(((wlRes.data as WatchlistRow[]) || []).map((r) => map(r, r.added_at)));
-    setWatchedList(((wdRes.data as WatchedRow[]) || []).map((r) => map(r, r.watched_at)));
-  }, [user, toast]);
+    const wlMapped = ((wlRes.data as WatchlistRow[]) || []).map((r) => map(r, r.added_at));
+    const wdMapped = ((wdRes.data as WatchedRow[]) || []).map((r) => map(r, r.watched_at));
+    setWatchlist(wlMapped);
+    setWatchedList(wdMapped);
+
+    // Queue a one-time lazy backfill for rows missing rating or genre.
+    const stale: { tmdbId: number; table: "watchlist" | "watched" }[] = [
+      ...wlMapped
+        .filter((m) => !m.rating || !m.genre)
+        .map((m) => ({ tmdbId: m.tmdbId, table: "watchlist" as const })),
+      ...wdMapped
+        .filter((m) => !m.rating || !m.genre)
+        .map((m) => ({ tmdbId: m.tmdbId, table: "watched" as const })),
+    ].filter((s) => !backfillTried.current.has(s.tmdbId));
+    if (stale.length) {
+      stale.forEach((s) => backfillTried.current.add(s.tmdbId));
+      void backfillMeta(stale);
+    }
+  }, [user, toast, backfillMeta]);
 
   // Initial load + realtime subscription on the user's own rows.
   useEffect(() => {

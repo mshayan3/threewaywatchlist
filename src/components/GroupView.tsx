@@ -26,9 +26,18 @@ const byTitle = (a: GroupMovie, b: GroupMovie) => a.title.localeCompare(b.title)
 // Triage: most-wanted first (more members queuing it), then alphabetical.
 const byDemand = (a: GroupMovie, b: GroupMovie) =>
   b.queuedBy.length - a.queuedBy.length || a.title.localeCompare(b.title);
+// Highest TMDB rating first, then alphabetical.
+const byRating = (a: GroupMovie, b: GroupMovie) =>
+  (b.rating || 0) - (a.rating || 0) || a.title.localeCompare(b.title);
 const nobodyWatched = (m: GroupMovie) => m.watchedBy.length === 0;
 
 type View = "common" | "watched";
+type Sort = "demand" | "rating" | "title";
+const SORTERS: Record<Sort, (a: GroupMovie, b: GroupMovie) => number> = {
+  demand: byDemand,
+  rating: byRating,
+  title: byTitle,
+};
 
 export default function GroupView({
   group,
@@ -45,6 +54,7 @@ export default function GroupView({
   onDelete,
 }: GroupViewProps) {
   const [view, setView] = useState<View>("common");
+  const [sort, setSort] = useState<Sort>("demand");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -56,8 +66,15 @@ export default function GroupView({
     return () => document.removeEventListener("click", onDoc);
   }, []);
 
-  const common = useMemo(() => movies.filter(nobodyWatched).sort(byDemand), [movies]);
-  const watched = useMemo(() => movies.filter((m) => !nobodyWatched(m)).sort(byTitle), [movies]);
+  const cmp = SORTERS[sort];
+  const common = useMemo(
+    () => movies.filter(nobodyWatched).sort(cmp),
+    [movies, cmp]
+  );
+  const watched = useMemo(
+    () => movies.filter((m) => !nobodyWatched(m)).sort(cmp),
+    [movies, cmp]
+  );
   const active = view === "common" ? common : watched;
 
   return (
@@ -157,11 +174,24 @@ export default function GroupView({
           ]}
         />
       </div>
-      <p className="mb-[18px] mt-0 text-[13.5px] text-faint">
+      <p className="mb-3 mt-0 text-[13.5px] text-faint">
         {view === "common"
           ? "On someone's list, and nobody in the group has watched yet."
           : "Seen by someone in the group."}
       </p>
+
+      <div className="mb-[18px] flex items-center gap-2.5">
+        <span className="text-[12.5px] font-semibold text-dim">Sort</span>
+        <Segmented
+          value={sort}
+          onChange={setSort}
+          options={[
+            ["demand", "Most wanted"],
+            ["rating", "Rating"],
+            ["title", "A\u2013Z"],
+          ]}
+        />
+      </div>
 
       {active.length > 0 ? (
         <CardGrid>

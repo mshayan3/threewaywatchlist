@@ -42,3 +42,18 @@ export function rerank(results: TmdbResult[], query: string): TmdbResult[] {
   const rest = results.filter((m) => !matchedIds.has(m.id));
   return [...matched, ...rest];
 }
+
+// Fetch a single movie's rating + genre from TMDB (via our proxy). Returns null
+// on any failure so callers can skip it silently during lazy backfill.
+export async function fetchMovieMeta(
+  id: number
+): Promise<{ rating: number; genre: string } | null> {
+  try {
+    const res = await fetch(`/api/tmdb?id=${encodeURIComponent(id)}`);
+    if (!res.ok) return null;
+    const d = await res.json();
+    return { rating: d.rating ?? 0, genre: d.genre ?? "" };
+  } catch {
+    return null;
+  }
+}

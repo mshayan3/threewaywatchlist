@@ -37,7 +37,44 @@ export async function GET(request: Request) {
     );
   }
 
-  const q = new URL(request.url).searchParams.get("q")?.trim();
+  const url = new URL(request.url);
+
+  // Details-by-id branch: returns rating + genre for a single movie. Used by
+  // the client to lazily backfill legacy list rows that predate rating/genre
+  // capture.
+  const id = url.searchParams.get("id")?.trim();
+  if (id) {
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}`, {
+        headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+      });
+      if (!res.ok) {
+        if (res.status === 429) {
+          return NextResponse.json(
+            { error: "TMDB rate limit reached — wait a moment and try again." },
+            { status: 429 }
+          );
+        }
+        return NextResponse.json({ error: `TMDB ${res.status}` }, { status: 502 });
+      }
+      const d = (await res.json()) as {
+        id: number;
+        vote_average?: number;
+        genres?: { id: number; name: string }[];
+      };
+      const g = d.genres?.[0];
+      return NextResponse.json({
+        id: d.id,
+        rating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : 0,
+        genre: g ? GENRES[g.id] || g.name || "" : "",
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "unknown error";
+      return NextResponse.json({ error: `Lookup failed: ${message}` }, { status: 502 });
+    }
+  }
+
+  const q = url.searchParams.get("q")?.trim();
   if (!q) {
     return NextResponse.json({ results: [] });
   }

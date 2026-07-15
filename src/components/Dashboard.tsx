@@ -70,7 +70,8 @@ export default function Dashboard({
   const active = view === "watchlist" ? toWatch : watched;
 
   return (
-    <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-6 pt-4">
+    <>
+    <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-4 pt-4 sm:px-6">
       <h1 className="m-0 mb-1.5 font-display text-[clamp(26px,4vw,34px)] font-extrabold tracking-[-0.02em]">
         Hey {firstName} 👋
       </h1>
@@ -142,8 +143,9 @@ export default function Dashboard({
         </p>
       )}
 
-      <Footer />
     </main>
+      <Footer />
+    </>
   );
 }
 
@@ -176,7 +178,10 @@ export function Segmented<T extends string>({
 
 export function Footer() {
   return (
-    <footer className="mt-11 pb-4 text-center text-[12.5px] text-faint">
+    <footer
+      className="fixed inset-x-0 bottom-0 z-[20] border-t border-border py-2.5 text-center text-[12px] text-faint backdrop-blur-md"
+      style={{ background: "var(--glass)" }}
+    >
       Movie data from{" "}
       <a
         href="https://www.themoviedb.org/"

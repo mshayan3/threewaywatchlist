@@ -2,6 +2,7 @@
 
 import { colorFor, initials, posterGradient } from "@/lib/helpers";
 import WatchCountBadge from "@/components/WatchCountBadge";
+import { useConfirm } from "@/components/ConfirmDialog";
 import type { GroupMovie, MoviePerson } from "@/lib/types";
 
 interface GroupMovieCardProps {
@@ -12,6 +13,7 @@ interface GroupMovieCardProps {
   iWatched: boolean; // caller has personally watched it
   watchCount: number; // caller's own watch count for this movie (0 = never)
   onAddToMine: (m: GroupMovie) => void;
+  onRemoveFromMine: (m: GroupMovie) => void;
 }
 
 function OverlayAvatars({ people }: { people: MoviePerson[] }) {
@@ -39,11 +41,23 @@ export default function GroupMovieCard({
   iWatched,
   watchCount,
   onAddToMine,
+  onRemoveFromMine,
 }: GroupMovieCardProps) {
+  const confirmDialog = useConfirm();
   const hasPoster = !!movie.poster;
   const poster = hasPoster ? `https://image.tmdb.org/t/p/w300${movie.poster}` : "";
   const meta = [movie.year, movie.genre].filter(Boolean).join(" · ");
   const people = variant === "common" ? movie.queuedBy : movie.watchedBy;
+
+  const handleRemoveFromMine = async () => {
+    const ok = await confirmDialog({
+      title: `Remove "${movie.title}" from your watchlist?`,
+      message: "It stays in the group's list if other members still want it.",
+      confirmLabel: "Remove",
+      danger: true,
+    });
+    if (ok) onRemoveFromMine(movie);
+  };
 
   return (
     <li
@@ -93,9 +107,14 @@ export default function GroupMovieCard({
             ✓ Seen it
           </div>
         ) : isMine ? (
-          <div className="w-full cursor-default rounded-[14px] border border-border bg-transparent py-2.5 text-center text-[13px] font-bold text-dim">
-            On your list
-          </div>
+          <button
+            onClick={handleRemoveFromMine}
+            title={`Remove ${movie.title} from my watchlist`}
+            className="group/rm w-full rounded-[14px] border border-border bg-transparent py-2.5 text-center text-[13px] font-bold text-dim transition-colors hover:border-accent2 hover:text-accent2"
+          >
+            <span className="group-hover/rm:hidden">✓ On your list</span>
+            <span className="hidden group-hover/rm:inline">✕ Remove from mine</span>
+          </button>
         ) : (
           <button
             onClick={() => onAddToMine(movie)}

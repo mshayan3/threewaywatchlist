@@ -19,6 +19,7 @@ interface GroupViewProps {
   onBack: () => void;
   onRetry: () => void;
   onAddToMine: (m: GroupMovie) => void;
+  onRemoveFromMine: (m: GroupMovie) => void;
   onLeave: () => void;
   onDelete: () => void;
 }
@@ -62,6 +63,7 @@ export default function GroupView({
   onBack,
   onRetry,
   onAddToMine,
+  onRemoveFromMine,
   onLeave,
   onDelete,
 }: GroupViewProps) {
@@ -90,7 +92,8 @@ export default function GroupView({
   const active = view === "common" ? common : watched;
 
   return (
-    <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-6 pt-4">
+    <>
+    <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-4 pt-4 sm:px-6">
       <button
         onClick={onBack}
         className="mb-4 inline-flex items-center gap-1.5 text-[14px] font-semibold text-dim transition-colors hover:text-text"
@@ -210,6 +213,7 @@ export default function GroupView({
               iWatched={myWatchedIds.has(m.tmdbId)}
               watchCount={myWatchCounts.get(m.tmdbId) ?? 0}
               onAddToMine={onAddToMine}
+              onRemoveFromMine={onRemoveFromMine}
             />
           ))}
         </CardGrid>
@@ -221,8 +225,9 @@ export default function GroupView({
         </p>
       )}
 
-      <Footer />
     </main>
+      <Footer />
+    </>
   );
 }
 

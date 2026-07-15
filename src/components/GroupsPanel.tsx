@@ -77,7 +77,8 @@ export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: Grou
     "w-full rounded-[14px] border border-border bg-input px-[15px] py-3 text-[14.5px] text-text outline-none transition-colors focus:border-accent";
 
   return (
-    <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-6 pt-4">
+    <>
+    <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-4 pt-4 sm:px-6">
       <div className="mb-2 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="m-0 mb-1.5 font-display text-[clamp(26px,4vw,34px)] font-extrabold tracking-[-0.02em]">
@@ -217,7 +218,8 @@ export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: Grou
         </p>
       )}
 
-      <Footer />
     </main>
+      <Footer />
+    </>
   );
 }

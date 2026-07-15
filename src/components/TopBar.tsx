@@ -45,43 +45,48 @@ export default function TopBar({ user, onSignOut }: TopBarProps) {
       : "bg-transparent text-dim hover:text-text");
 
   return (
-    <header className="relative z-[5] mx-auto flex max-w-[1140px] items-center justify-between gap-4 px-5 py-5 sm:px-8">
-      <Logo />
+    <header
+      className="sticky top-0 z-[20] border-b border-border backdrop-blur-md"
+      style={{ background: "var(--glass)" }}
+    >
+      <div className="mx-auto flex max-w-[1140px] items-center justify-between gap-3 px-4 py-3.5 sm:gap-4 sm:px-8 sm:py-4">
+        <Logo />
 
-      {user && (
-        <nav className="flex flex-none gap-1 rounded-[14px] border border-border bg-chip p-[5px]">
-          <Link href="/dashboard" className={seg(onIndividual)}>
-            Individual
-          </Link>
-          <Link href="/groups" className={seg(onGroups)}>
-            Groups
-          </Link>
-        </nav>
-      )}
-
-      <div className="flex flex-none items-center gap-2.5">
-        <ThemeToggle />
         {user && (
-          <>
-            <span
-              className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-accent2 text-[13px] font-extrabold text-white"
-              title={user.name}
-            >
-              {initials(user.name)}
-            </span>
-            <button
-              type="button"
-              onClick={onSignOut}
-              title="Sign out"
-              aria-label="Sign out"
-              className="grid h-[38px] w-[38px] flex-none place-items-center rounded-xl border border-border bg-chip text-dim transition-colors hover:text-text active:scale-95"
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </>
+          <nav className="flex flex-none gap-1 rounded-[14px] border border-border bg-chip p-[5px]">
+            <Link href="/dashboard" className={seg(onIndividual)}>
+              Individual
+            </Link>
+            <Link href="/groups" className={seg(onGroups)}>
+              Groups
+            </Link>
+          </nav>
         )}
+
+        <div className="flex flex-none items-center gap-2 sm:gap-2.5">
+          <ThemeToggle />
+          {user && (
+            <>
+              <span
+                className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-accent2 text-[13px] font-extrabold text-white"
+                title={user.name}
+              >
+                {initials(user.name)}
+              </span>
+              <button
+                type="button"
+                onClick={onSignOut}
+                title="Sign out"
+                aria-label="Sign out"
+                className="grid h-[38px] w-[38px] flex-none place-items-center rounded-xl border border-border bg-chip text-dim transition-colors hover:text-text active:scale-95"
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

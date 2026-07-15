@@ -178,6 +178,20 @@ export default function GroupPage() {
     loadGroupMovies();
   };
 
+  const onRemoveFromMine = async (m: GroupMovie) => {
+    await personal.removeFromWatchlist({
+      tmdbId: m.tmdbId,
+      title: m.title,
+      year: m.year,
+      poster: m.poster,
+      rating: m.rating,
+      genre: m.genre,
+      at: "",
+      watchCount: 0,
+    });
+    loadGroupMovies();
+  };
+
   if (loading || resolving || !group) {
     return (
       <>
@@ -201,6 +215,7 @@ export default function GroupPage() {
         onBack={() => router.push("/groups")}
         onRetry={loadGroupMovies}
         onAddToMine={onAddToMine}
+        onRemoveFromMine={onRemoveFromMine}
         onLeave={handleLeave}
         onDelete={handleDelete}
       />

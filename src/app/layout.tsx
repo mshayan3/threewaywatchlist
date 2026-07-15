@@ -53,7 +53,7 @@ export default function RootLayout({
       <body>
         <div className="blob blob-1" aria-hidden="true" />
         <div className="blob blob-2" aria-hidden="true" />
-        <div className="relative z-[1] min-h-screen pb-16">
+        <div className="relative z-[1] min-h-screen pb-20">
           <ToastProvider>
             <ConfirmProvider>{children}</ConfirmProvider>
           </ToastProvider>

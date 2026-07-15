@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import SearchBar from "./SearchBar";
 import PersonalMovieCard from "./PersonalMovieCard";
+import SortMenu from "./SortMenu";
 import { Count, CardGrid } from "./MovieRow";
 import type { AppUser, PersonalMovie, TmdbResult } from "@/lib/types";
 
@@ -11,6 +12,7 @@ interface DashboardProps {
   watchlist: PersonalMovie[];
   watchedList: PersonalMovie[];
   onAdd: (r: TmdbResult) => void;
+  onAddToWatched: (r: TmdbResult) => void;
   onMarkWatched: (m: PersonalMovie) => void;
   onMoveToWatchlist: (m: PersonalMovie) => void;
   onRemoveFromWatchlist: (m: PersonalMovie) => void;
@@ -19,23 +21,42 @@ interface DashboardProps {
 
 const byNewest = (a: PersonalMovie, b: PersonalMovie) =>
   new Date(b.at).getTime() - new Date(a.at).getTime();
+const byRating = (a: PersonalMovie, b: PersonalMovie) =>
+  (b.rating || 0) - (a.rating || 0) || a.title.localeCompare(b.title);
+const byTitle = (a: PersonalMovie, b: PersonalMovie) => a.title.localeCompare(b.title);
 
 type View = "watchlist" | "watched";
+type Sort = "newest" | "rating" | "title";
+const SORTERS: Record<Sort, (a: PersonalMovie, b: PersonalMovie) => number> = {
+  newest: byNewest,
+  rating: byRating,
+  title: byTitle,
+};
+const SORT_OPTIONS = [
+  { value: "newest" as Sort, label: "Newest" },
+  { value: "rating" as Sort, label: "Rating" },
+  { value: "title" as Sort, label: "A–Z" },
+];
 
 export default function Dashboard({
   user,
   watchlist,
   watchedList,
   onAdd,
+  onAddToWatched,
   onMarkWatched,
   onMoveToWatchlist,
   onRemoveFromWatchlist,
   onRemoveFromWatched,
 }: DashboardProps) {
   const [view, setView] = useState<View>("watchlist");
+  const [sort, setSort] = useState<Sort>("newest");
 
-  const toWatch = useMemo(() => [...watchlist].sort(byNewest), [watchlist]);
-  const watched = useMemo(() => [...watchedList].sort(byNewest), [watchedList]);
+  const cmp = SORTERS[sort];
+  const toWatch = useMemo(() => [...watchlist].sort(cmp), [watchlist, cmp]);
+  const watched = useMemo(() => [...watchedList].sort(cmp), [watchedList, cmp]);
+  // Search "Add" files into whichever list is open (watchlist vs watched).
+  const handleAdd = view === "watched" ? onAddToWatched : onAdd;
   const existingIds = useMemo(
     () =>
       new Set([
@@ -57,7 +78,15 @@ export default function Dashboard({
         Your personal watchlist. Everything here is pooled into the groups you belong to.
       </p>
 
-      <SearchBar existingIds={existingIds} onAdd={onAdd} />
+      <SearchBar
+        existingIds={existingIds}
+        onAdd={handleAdd}
+        placeholder={
+          view === "watched"
+            ? "Add a movie to your watched list…"
+            : "Add a movie to your watchlist…"
+        }
+      />
 
       <div className="mb-1 flex flex-wrap items-center justify-between gap-3.5">
         <div className="flex items-center gap-2.5">
@@ -75,9 +104,12 @@ export default function Dashboard({
           ]}
         />
       </div>
-      <p className="mb-[18px] mt-0 text-[13.5px] text-faint">
-        {view === "watchlist" ? "Movies you want to see." : "Movies you've already seen."}
-      </p>
+      <div className="mb-[18px] flex flex-wrap items-center justify-between gap-3">
+        <p className="m-0 text-[13.5px] text-faint">
+          {view === "watchlist" ? "Movies you want to see." : "Movies you've already seen."}
+        </p>
+        <SortMenu value={sort} onChange={setSort} options={SORT_OPTIONS} />
+      </div>
 
       {active.length > 0 ? (
         <CardGrid>

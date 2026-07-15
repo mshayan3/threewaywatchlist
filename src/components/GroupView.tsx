@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import GroupMovieCard from "./GroupMovieCard";
 import { Count, CardGrid } from "./MovieRow";
 import { Segmented, Footer } from "./Dashboard";
+import SortMenu from "./SortMenu";
 import { colorFor, initials } from "@/lib/helpers";
 import type { Group, GroupMovie, Member } from "@/lib/types";
 
@@ -38,6 +39,17 @@ const SORTERS: Record<Sort, (a: GroupMovie, b: GroupMovie) => number> = {
   rating: byRating,
   title: byTitle,
 };
+// The Common tab can triage by demand; the Watched tab can't (nobody's queued),
+// so it drops that option.
+const COMMON_SORTS = [
+  { value: "demand" as Sort, label: "Most wanted" },
+  { value: "rating" as Sort, label: "Rating" },
+  { value: "title" as Sort, label: "A–Z" },
+];
+const WATCHED_SORTS = [
+  { value: "rating" as Sort, label: "Rating" },
+  { value: "title" as Sort, label: "A–Z" },
+];
 
 export default function GroupView({
   group,
@@ -54,7 +66,8 @@ export default function GroupView({
   onDelete,
 }: GroupViewProps) {
   const [view, setView] = useState<View>("common");
-  const [sort, setSort] = useState<Sort>("demand");
+  const [commonSort, setCommonSort] = useState<Sort>("demand");
+  const [watchedSort, setWatchedSort] = useState<Sort>("title");
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -66,14 +79,13 @@ export default function GroupView({
     return () => document.removeEventListener("click", onDoc);
   }, []);
 
-  const cmp = SORTERS[sort];
   const common = useMemo(
-    () => movies.filter(nobodyWatched).sort(cmp),
-    [movies, cmp]
+    () => movies.filter(nobodyWatched).sort(SORTERS[commonSort]),
+    [movies, commonSort]
   );
   const watched = useMemo(
-    () => movies.filter((m) => !nobodyWatched(m)).sort(cmp),
-    [movies, cmp]
+    () => movies.filter((m) => !nobodyWatched(m)).sort(SORTERS[watchedSort]),
+    [movies, watchedSort]
   );
   const active = view === "common" ? common : watched;
 
@@ -174,23 +186,17 @@ export default function GroupView({
           ]}
         />
       </div>
-      <p className="mb-3 mt-0 text-[13.5px] text-faint">
-        {view === "common"
-          ? "On someone's list, and nobody in the group has watched yet."
-          : "Seen by someone in the group."}
-      </p>
-
-      <div className="mb-[18px] flex items-center gap-2.5">
-        <span className="text-[12.5px] font-semibold text-dim">Sort</span>
-        <Segmented
-          value={sort}
-          onChange={setSort}
-          options={[
-            ["demand", "Most wanted"],
-            ["rating", "Rating"],
-            ["title", "A\u2013Z"],
-          ]}
-        />
+      <div className="mb-[18px] flex flex-wrap items-center justify-between gap-3">
+        <p className="m-0 text-[13.5px] text-faint">
+          {view === "common"
+            ? "On someone's list, and nobody in the group has watched yet."
+            : "Seen by someone in the group."}
+        </p>
+        {view === "common" ? (
+          <SortMenu value={commonSort} onChange={setCommonSort} options={COMMON_SORTS} />
+        ) : (
+          <SortMenu value={watchedSort} onChange={setWatchedSort} options={WATCHED_SORTS} />
+        )}
       </div>
 
       {active.length > 0 ? (

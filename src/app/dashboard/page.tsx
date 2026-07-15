@@ -41,6 +41,7 @@ export default function DashboardPage() {
         watchlist={personal.watchlist}
         watchedList={personal.watchedList}
         onAdd={personal.add}
+        onAddToWatched={personal.addToWatched}
         onMarkWatched={personal.markWatched}
         onMoveToWatchlist={personal.moveToWatchlist}
         onRemoveFromWatchlist={personal.removeFromWatchlist}

@@ -8,9 +8,14 @@ import type { TmdbResult } from "@/lib/types";
 interface SearchBarProps {
   existingIds: Set<string>;
   onAdd: (result: TmdbResult) => void;
+  placeholder?: string;
 }
 
-export default function SearchBar({ existingIds, onAdd }: SearchBarProps) {
+export default function SearchBar({
+  existingIds,
+  onAdd,
+  placeholder = "Add a movie to your watchlist…",
+}: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TmdbResult[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +81,7 @@ export default function SearchBar({ existingIds, onAdd }: SearchBarProps) {
       </svg>
       <input
         type="text"
-        placeholder="Add a movie to your watchlist…"
+        placeholder={placeholder}
         autoComplete="off"
         value={query}
         onChange={(e) => onChange(e.target.value)}

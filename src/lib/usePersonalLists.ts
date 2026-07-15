@@ -163,6 +163,34 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
     [user, toast, after]
   );
 
+  // Add a fresh search result straight into the watched list (used when the
+  // Watched tab is open). Counts as a watch, so it bumps the watch counter —
+  // reversible via removeFromWatched, which decrements it again.
+  const addToWatched = useCallback(
+    async (r: TmdbResult) => {
+      if (!user) return;
+      await supabase.from("watchlist").delete().match({ user_id: user.id, tmdb_id: r.id });
+      const { error } = await supabase.from("watched").upsert(
+        {
+          user_id: user.id,
+          tmdb_id: r.id,
+          title: r.title,
+          year: parseYear(r.release_date),
+          poster: r.poster_path || "",
+          rating: r.rating ?? 0,
+          genre: r.genre || "",
+        },
+        { onConflict: "user_id,tmdb_id" }
+      );
+      if (error) return toast("Add failed: " + error.message);
+      const { error: cErr } = await supabase.rpc("increment_watch_count", { p_tmdb: r.id });
+      if (cErr) toast("Watch count not updated: " + cErr.message);
+      toast(`Added "${r.title}" to watched`);
+      after();
+    },
+    [user, toast, after]
+  );
+
   const markWatched = useCallback(
     async (m: PersonalMovie) => {
       if (!user) return;
@@ -215,6 +243,10 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
         .delete()
         .match({ user_id: user.id, tmdb_id: m.tmdbId });
       if (error) return toast("Failed: " + error.message);
+      // Failsafe: removing from watched walks the watch counter back down
+      // (floored at 0), so an accidental watched-add can be fully undone.
+      const { error: cErr } = await supabase.rpc("decrement_watch_count", { p_tmdb: m.tmdbId });
+      if (cErr) toast("Watch count not updated: " + cErr.message);
       after();
     },
     [user, toast, after]
@@ -231,6 +263,7 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
     watchCounts,
     reload,
     add,
+    addToWatched,
     markWatched,
     moveToWatchlist,
     removeFromWatchlist,

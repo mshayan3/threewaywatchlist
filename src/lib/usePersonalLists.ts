@@ -61,18 +61,25 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
 
   const reload = useCallback(async () => {
     if (!user) return;
+    // The two lists are essential; watch_counts is optional (a missing table or
+    // policy must not take the whole dashboard down with it).
     const [wlRes, wdRes, wcRes] = await Promise.all([
       supabase.from("watchlist").select("*").eq("user_id", user.id),
       supabase.from("watched").select("*").eq("user_id", user.id),
       supabase.from("watch_counts").select("tmdb_id,count").eq("user_id", user.id),
     ]);
-    if (wlRes.error || wdRes.error || wcRes.error) {
-      toast("Couldn't load your lists: " + (wlRes.error || wdRes.error || wcRes.error)!.message);
+    if (wlRes.error || wdRes.error) {
+      toast("Couldn't load your lists: " + (wlRes.error || wdRes.error)!.message);
       return;
     }
     const counts = new Map<number, number>();
-    for (const row of (wcRes.data as { tmdb_id: number; count: number }[]) || [])
-      counts.set(row.tmdb_id, row.count);
+    if (wcRes.error) {
+      // Non-fatal: show lists without watch counts (badge just won't appear).
+      console.warn("watch_counts unavailable:", wcRes.error.message);
+    } else {
+      for (const row of (wcRes.data as { tmdb_id: number; count: number }[]) || [])
+        counts.set(row.tmdb_id, row.count);
+    }
     setWatchCounts(counts);
     const map = (r: WatchlistRow | WatchedRow, at: string): PersonalMovie => ({
       tmdbId: r.tmdb_id,

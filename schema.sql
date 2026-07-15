@@ -16,16 +16,20 @@
 create extension if not exists pgcrypto;
 
 -- --------------------------------------------------------------------------
---  Drop the old group-scoped model (fresh start — no data migration).
+--  Migrate function signatures whose return type changed (CREATE OR REPLACE
+--  can't change a function's return type, so these must be dropped first).
+--  NOTE: this section must NEVER drop data tables — the file is meant to be
+--  re-run safely. Dropping public.watched here previously wiped users' watched
+--  lists on every re-run; the personal watchlist/watched tables below use
+--  CREATE TABLE IF NOT EXISTS and are preserved.
 -- --------------------------------------------------------------------------
 drop function if exists public.remove_movie(text, bigint);
--- my_groups gains is_owner + member_count columns; its return type changes, so it
--- must be dropped (CREATE OR REPLACE can't change a function's return type).
 drop function if exists public.my_groups();
--- group_movies gains rating + genre columns; return type change → must drop.
 drop function if exists public.group_movies(text);
-drop table if exists public.watched cascade;
-drop table if exists public.movies  cascade;
+-- One-time removal of the legacy group-scoped `movies` table (never recreated,
+-- holds no current data). The user-scoped `public.watched` is intentionally
+-- NOT dropped so re-running this file keeps everyone's watched history.
+drop table if exists public.movies cascade;
 
 -- --- group tables (unchanged) ----------------------------------------------
 create table if not exists public.groups (

@@ -38,6 +38,7 @@ export default function TopBar({ user, onSignOut }: TopBarProps) {
   const pathname = usePathname() || "";
   const onGroups = pathname.startsWith("/groups");
   const onIndividual = pathname.startsWith("/dashboard");
+  const onProfile = pathname.startsWith("/profile");
   const confirmDialog = useConfirm();
 
   const handleSignOut = async () => {
@@ -83,7 +84,12 @@ export default function TopBar({ user, onSignOut }: TopBarProps) {
                 href="/profile"
                 title="Your profile"
                 aria-label="Your profile"
-                className="grid h-[38px] w-[38px] flex-none place-items-center overflow-hidden rounded-xl bg-accent2 text-[13px] font-extrabold text-white transition-transform hover:opacity-90 active:scale-95"
+                className={
+                  "grid h-[38px] w-[38px] flex-none place-items-center overflow-hidden rounded-xl bg-accent2 text-[13px] font-extrabold text-white transition-all hover:opacity-90 active:scale-95 " +
+                  (onProfile
+                    ? "ring-2 ring-accent ring-offset-2 ring-offset-[var(--surface)]"
+                    : "")
+                }
               >
                 {user.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element

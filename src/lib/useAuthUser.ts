@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import type { AppUser } from "@/lib/types";
@@ -80,6 +80,13 @@ export function useAuthUser() {
     };
   }, [authUser, loadProfile]);
 
-  const user: AppUser | null = authUser ? toAppUser(authUser, profile) : null;
+  // Memoize so `user` keeps a stable identity across renders and only changes
+  // when the underlying auth user or profile actually changes. Without this,
+  // every consumer effect keyed on `user` re-runs on each render (which caused
+  // reload loops, empty lists, and inputs resetting as you type).
+  const user: AppUser | null = useMemo(
+    () => (authUser ? toAppUser(authUser, profile) : null),
+    [authUser, profile]
+  );
   return { user, loading };
 }

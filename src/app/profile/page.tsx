@@ -49,7 +49,10 @@ export default function ProfilePage() {
     return () => {
       active = false;
     };
-  }, [user]);
+    // Key on the stable id only — not the whole user object — so re-renders
+    // (e.g. from the top-bar avatar) don't refetch and wipe what you're typing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Revoke any object URL we created for the local preview.
   useEffect(() => {

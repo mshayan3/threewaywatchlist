@@ -140,20 +140,28 @@ export default function GroupView({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {members.map((m) => (
-            <span
-              key={m.user_id}
-              className="flex items-center gap-2 rounded-full border border-border bg-surface py-1.5 pl-1.5 pr-3.5 text-[13px] font-semibold"
-            >
+          {members.map((m) => {
+            const label = m.name || m.user_name;
+            return (
               <span
-                className="grid h-[26px] w-[26px] flex-none place-items-center rounded-full text-[10px] font-extrabold text-white"
-                style={{ background: colorFor(m.user_name) }}
+                key={m.user_id}
+                className="flex items-center gap-2 rounded-full border border-border bg-surface py-1.5 pl-1.5 pr-3.5 text-[13px] font-semibold"
               >
-                {initials(m.user_name)}
+                <span
+                  className="grid h-[26px] w-[26px] flex-none place-items-center overflow-hidden rounded-full text-[10px] font-extrabold text-white"
+                  style={m.avatar_url ? undefined : { background: colorFor(label) }}
+                >
+                  {m.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={m.avatar_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    initials(label)
+                  )}
+                </span>
+                {label || "…"}
               </span>
-              {m.user_name || "…"}
-            </span>
-          ))}
+            );
+          })}
         </div>
       </div>
 

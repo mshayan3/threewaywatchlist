@@ -21,8 +21,15 @@ type GmRow = {
   poster: string | null;
   rating: number | null;
   genre: string | null;
-  queued_by: { user_id: string; name: string | null }[] | null;
-  watched_by: { user_id: string; name: string | null }[] | null;
+  queued_by: { user_id: string; name: string | null; avatar_url: string | null }[] | null;
+  watched_by: { user_id: string; name: string | null; avatar_url: string | null }[] | null;
+};
+
+type ProfileLite = {
+  user_id: string;
+  nickname: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
 };
 
 export default function GroupPage() {
@@ -53,7 +60,29 @@ export default function GroupPage() {
       toast("Couldn't refresh the group: " + (gmRes.error || memRes.error)!.message);
       return;
     }
-    setMembers((memRes.data as Member[]) || []);
+
+    // Merge member rows with their profiles (nickname + avatar) for display.
+    const rawMembers = (memRes.data as { user_id: string; user_name: string | null }[]) || [];
+    const ids = rawMembers.map((m) => m.user_id);
+    const profs: Record<string, ProfileLite> = {};
+    if (ids.length) {
+      const { data: pdata } = await supabase
+        .from("profiles")
+        .select("user_id,nickname,display_name,avatar_url")
+        .in("user_id", ids);
+      for (const p of (pdata as ProfileLite[]) || []) profs[p.user_id] = p;
+    }
+    setMembers(
+      rawMembers.map((m) => {
+        const p = profs[m.user_id];
+        return {
+          user_id: m.user_id,
+          user_name: m.user_name,
+          name: p?.nickname?.trim() || p?.display_name?.trim() || m.user_name,
+          avatar_url: p?.avatar_url ?? null,
+        };
+      })
+    );
     const mapped: GroupMovie[] = ((gmRes.data as GmRow[]) || []).map((r) => ({
       tmdbId: r.tmdb_id,
       title: r.title,

@@ -23,11 +23,19 @@ function OverlayAvatars({ people }: { people: MoviePerson[] }) {
       {people.slice(0, 4).map((p) => (
         <span
           key={p.user_id}
-          className="-ml-1.5 grid h-6 w-6 flex-none place-items-center rounded-full text-[9px] font-extrabold text-white"
-          style={{ background: colorFor(p.name), border: "2px solid rgba(0,0,0,.3)" }}
+          className="-ml-1.5 grid h-6 w-6 flex-none place-items-center overflow-hidden rounded-full text-[9px] font-extrabold text-white"
+          style={{
+            background: p.avatar_url ? undefined : colorFor(p.name),
+            border: "2px solid rgba(0,0,0,.3)",
+          }}
           title={p.name || "…"}
         >
-          {initials(p.name)}
+          {p.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            initials(p.name)
+          )}
         </span>
       ))}
     </div>
@@ -99,7 +107,7 @@ export default function GroupMovieCard({
       )}
 
       <div className="px-3.5 pb-4 pt-3">
-        <div className="clamp-2 text-[15px] font-bold leading-[1.2]">{movie.title}</div>
+        <div className="clamp-2 min-h-[2.4em] text-[15px] font-bold leading-[1.2]">{movie.title}</div>
         <div className="mb-3 mt-0.5 text-[12.5px] text-dim">{meta}</div>
 
         {iWatched ? (

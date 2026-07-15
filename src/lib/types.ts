@@ -2,7 +2,11 @@
 
 export interface AppUser {
   id: string;
-  name: string;
+  name: string; // effective display name (profile display_name → auth name)
+  displayName?: string;
+  nickname?: string;
+  avatarUrl?: string | null;
+  bio?: string;
 }
 
 // A group the user belongs to, as returned by the my_groups RPC.
@@ -16,6 +20,8 @@ export interface Group {
 export interface Member {
   user_id: string;
   user_name: string | null;
+  name?: string | null; // effective display (profile nickname/display_name → user_name)
+  avatar_url?: string | null;
 }
 
 // ---- personal (user-scoped) rows as stored in Supabase --------------------
@@ -57,6 +63,7 @@ export interface PersonalMovie {
 export interface MoviePerson {
   user_id: string;
   name: string | null;
+  avatar_url?: string | null;
 }
 
 // A movie in a group's DERIVED combined list (from the group_movies RPC).

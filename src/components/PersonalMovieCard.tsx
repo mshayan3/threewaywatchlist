@@ -88,7 +88,7 @@ export default function PersonalMovieCard({
       )}
 
       <div className="px-3.5 pb-4 pt-3">
-        <div className="clamp-2 text-[15px] font-bold leading-[1.2]">{movie.title}</div>
+        <div className="clamp-2 min-h-[2.4em] text-[15px] font-bold leading-[1.2]">{movie.title}</div>
         <div className="mb-3 mt-0.5 text-[12.5px] text-dim">{meta}</div>
 
         {variant === "watchlist" ? (

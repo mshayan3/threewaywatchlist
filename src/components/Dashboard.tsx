@@ -166,7 +166,7 @@ export function Segmented<T extends string>({
           onClick={() => onChange(k)}
           className={
             "rounded-[10px] px-[18px] py-2 text-[13.5px] font-bold transition-colors " +
-            (value === k ? "bg-accent text-[var(--accent-text)]" : "bg-transparent text-dim hover:text-text")
+            (value === k ? "bg-accent2 text-white" : "bg-transparent text-dim hover:text-text")
           }
         >
           {label}

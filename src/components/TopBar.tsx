@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { AppUser } from "@/lib/types";
 import { initials } from "@/lib/helpers";
 import ThemeToggle from "./ThemeToggle";
+import { useConfirm } from "./ConfirmDialog";
 
 interface TopBarProps {
   user: AppUser | null;
@@ -37,11 +38,22 @@ export default function TopBar({ user, onSignOut }: TopBarProps) {
   const pathname = usePathname() || "";
   const onGroups = pathname.startsWith("/groups");
   const onIndividual = pathname.startsWith("/dashboard");
+  const confirmDialog = useConfirm();
+
+  const handleSignOut = async () => {
+    const ok = await confirmDialog({
+      title: "Sign out?",
+      message: "You'll need to sign back in to see your lists and groups.",
+      confirmLabel: "Sign out",
+      danger: true,
+    });
+    if (ok) onSignOut();
+  };
 
   const seg = (active: boolean) =>
     "rounded-[10px] px-4 py-2 text-[13.5px] font-bold transition-colors sm:px-[18px] " +
     (active
-      ? "bg-accent text-[var(--accent-text)]"
+      ? "bg-accent2 text-white"
       : "bg-transparent text-dim hover:text-text");
 
   return (
@@ -67,15 +79,22 @@ export default function TopBar({ user, onSignOut }: TopBarProps) {
           <ThemeToggle />
           {user && (
             <>
-              <span
-                className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-accent2 text-[13px] font-extrabold text-white"
-                title={user.name}
+              <Link
+                href="/profile"
+                title="Your profile"
+                aria-label="Your profile"
+                className="grid h-[38px] w-[38px] flex-none place-items-center overflow-hidden rounded-xl bg-accent2 text-[13px] font-extrabold text-white transition-transform hover:opacity-90 active:scale-95"
               >
-                {initials(user.name)}
-              </span>
+                {user.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  initials(user.name)
+                )}
+              </Link>
               <button
                 type="button"
-                onClick={onSignOut}
+                onClick={handleSignOut}
                 title="Sign out"
                 aria-label="Sign out"
                 className="grid h-[38px] w-[38px] flex-none place-items-center rounded-xl border border-border bg-chip text-dim transition-colors hover:text-text active:scale-95"

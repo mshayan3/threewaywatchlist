@@ -341,3 +341,130 @@ do $$
 begin
   begin alter publication supabase_realtime add table public.watch_counts; exception when duplicate_object then null; end;
 end $$;
+
+-- ==========================================================================
+--  v4: USER PROFILES + avatars
+--  ------------------------------------------------------------------------
+--  A profile per user: display name, short nickname (shown in groups), an
+--  optional avatar (uploaded to the `avatars` storage bucket), and a one-line
+--  bio. Profiles are readable by any authenticated user (names/avatars are
+--  semi-public so they can appear in shared group views), but each user may
+--  only edit their own row.
+-- ==========================================================================
+create table if not exists public.profiles (
+  user_id      uuid primary key references auth.users(id) on delete cascade,
+  display_name text,
+  nickname     text,
+  avatar_url   text,
+  bio          text,
+  updated_at   timestamptz default now()
+);
+
+alter table public.profiles enable row level security;
+
+drop policy if exists "profiles readable" on public.profiles;
+drop policy if exists "own profile write" on public.profiles;
+
+-- Any signed-in user can read profiles (needed to render other members in a
+-- group). Only basic display fields live here — nothing sensitive.
+create policy "profiles readable" on public.profiles
+  for select to authenticated using (true);
+
+-- A user can insert/update/delete only their own profile row.
+create policy "own profile write" on public.profiles
+  for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Keep profile changes streaming to the user's own open tabs (top-bar avatar).
+do $$
+begin
+  begin alter publication supabase_realtime add table public.profiles; exception when duplicate_object then null; end;
+end $$;
+
+-- --------------------------------------------------------------------------
+--  Avatar storage bucket (public read; users write only their own folder).
+--  Files are stored under `<user_id>/...`, so the first path segment gates
+--  who may write.
+-- --------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+  values ('avatars', 'avatars', true)
+  on conflict (id) do nothing;
+
+drop policy if exists "avatars public read"   on storage.objects;
+drop policy if exists "avatars owner write"    on storage.objects;
+drop policy if exists "avatars owner update"   on storage.objects;
+drop policy if exists "avatars owner delete"   on storage.objects;
+
+create policy "avatars public read" on storage.objects
+  for select to public using (bucket_id = 'avatars');
+
+create policy "avatars owner write" on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "avatars owner update" on storage.objects
+  for update to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "avatars owner delete" on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- --------------------------------------------------------------------------
+--  group_movies v3: join profiles so a group's queued_by / watched_by carry
+--  each member's preferred name (nickname → display_name → stored user_name)
+--  and avatar. Return type is unchanged (jsonb payloads), so CREATE OR REPLACE
+--  is enough.
+-- --------------------------------------------------------------------------
+create or replace function public.group_movies(p_code text)
+returns table(
+  tmdb_id    bigint,
+  title      text,
+  year       text,
+  poster     text,
+  rating     numeric,
+  genre      text,
+  queued_by  jsonb,
+  watched_by jsonb
+)
+language sql security definer stable
+set search_path = public as $$
+  with entries as (
+    select w.tmdb_id, w.title, w.year, w.poster, w.rating, w.genre,
+           m.user_id,
+           coalesce(nullif(p.nickname, ''), nullif(p.display_name, ''), m.user_name) as pname,
+           p.avatar_url,
+           'queued'::text as kind
+    from public.group_members m
+    join public.watchlist w on w.user_id = m.user_id
+    left join public.profiles p on p.user_id = m.user_id
+    where m.group_code = p_code and public.is_member(p_code)
+    union all
+    select wd.tmdb_id, wd.title, wd.year, wd.poster, wd.rating, wd.genre,
+           m.user_id,
+           coalesce(nullif(p.nickname, ''), nullif(p.display_name, ''), m.user_name) as pname,
+           p.avatar_url,
+           'watched'::text as kind
+    from public.group_members m
+    join public.watched wd on wd.user_id = m.user_id
+    left join public.profiles p on p.user_id = m.user_id
+    where m.group_code = p_code and public.is_member(p_code)
+  )
+  select
+    e.tmdb_id,
+    (array_agg(e.title  order by e.title))[1]  as title,
+    (array_agg(e.year   order by e.year))[1]   as year,
+    (array_agg(e.poster order by e.poster))[1] as poster,
+    max(e.rating)                              as rating,
+    (array_agg(e.genre  order by e.genre))[1]  as genre,
+    coalesce(
+      jsonb_agg(distinct jsonb_build_object('user_id', e.user_id, 'name', e.pname, 'avatar_url', e.avatar_url))
+        filter (where e.kind = 'queued'), '[]'::jsonb) as queued_by,
+    coalesce(
+      jsonb_agg(distinct jsonb_build_object('user_id', e.user_id, 'name', e.pname, 'avatar_url', e.avatar_url))
+        filter (where e.kind = 'watched'), '[]'::jsonb) as watched_by
+  from entries e
+  group by e.tmdb_id;
+$$;
+
+grant execute on function public.group_movies(text) to authenticated;

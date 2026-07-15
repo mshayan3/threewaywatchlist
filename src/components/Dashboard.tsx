@@ -57,13 +57,13 @@ export default function Dashboard({
   const watched = useMemo(() => [...watchedList].sort(cmp), [watchedList, cmp]);
   // Search "Add" files into whichever list is open (watchlist vs watched).
   const handleAdd = view === "watched" ? onAddToWatched : onAdd;
-  const existingIds = useMemo(
-    () =>
-      new Set([
-        ...watchlist.map((m) => String(m.tmdbId)),
-        ...watchedList.map((m) => String(m.tmdbId)),
-      ]),
-    [watchlist, watchedList]
+  const watchlistIds = useMemo(
+    () => new Set(watchlist.map((m) => String(m.tmdbId))),
+    [watchlist]
+  );
+  const watchedIds = useMemo(
+    () => new Set(watchedList.map((m) => String(m.tmdbId))),
+    [watchedList]
   );
 
   const firstName = user.name.split(/\s+/)[0];
@@ -79,7 +79,8 @@ export default function Dashboard({
       </p>
 
       <SearchBar
-        existingIds={existingIds}
+        watchlistIds={watchlistIds}
+        watchedIds={watchedIds}
         onAdd={handleAdd}
         placeholder={
           view === "watched"

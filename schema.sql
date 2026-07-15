@@ -333,22 +333,8 @@ end; $$;
 
 grant execute on function public.increment_watch_count(bigint) to authenticated;
 
--- Failsafe: walk the caller's watch count back down, floored at 0. Called when a
--- movie is removed from the watched list, so an accidental "watched" add (which
--- bumped the count) can be fully reversed. Returns the new value.
-create or replace function public.decrement_watch_count(p_tmdb bigint)
-returns integer language plpgsql security definer
-set search_path = public as $$
-declare new_count integer;
-begin
-  update public.watch_counts
-    set count = greatest(count - 1, 0)
-    where user_id = auth.uid() and tmdb_id = p_tmdb
-  returning count into new_count;
-  return coalesce(new_count, 0);
-end; $$;
-
-grant execute on function public.decrement_watch_count(bigint) to authenticated;
+-- Note: resetting a watch count (on removal from the watched list) is a plain
+-- delete of the row from the client, guarded by RLS — no RPC needed.
 
 -- Publish so a user's own watch-count changes stream to their open tabs.
 do $$

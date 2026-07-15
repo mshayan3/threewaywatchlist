@@ -6,13 +6,15 @@ import { parseYear, posterGradient } from "@/lib/helpers";
 import type { TmdbResult } from "@/lib/types";
 
 interface SearchBarProps {
-  existingIds: Set<string>;
+  watchlistIds: Set<string>;
+  watchedIds: Set<string>;
   onAdd: (result: TmdbResult) => void;
   placeholder?: string;
 }
 
 export default function SearchBar({
-  existingIds,
+  watchlistIds,
+  watchedIds,
   onAdd,
   placeholder = "Add a movie to your watchlist…",
 }: SearchBarProps) {
@@ -99,7 +101,11 @@ export default function SearchBar({
             results.map((r) => {
               const hasPoster = !!r.poster_path;
               const year = parseYear(r.release_date);
-              const already = existingIds.has(String(r.id));
+              const id = String(r.id);
+              const onWatchlist = watchlistIds.has(id);
+              const onWatched = watchedIds.has(id);
+              const already = onWatchlist || onWatched;
+              const label = onWatchlist ? "On watchlist" : onWatched ? "On watched" : "Add";
               return (
                 <li
                   key={r.id}
@@ -137,7 +143,7 @@ export default function SearchBar({
                         : "bg-accent text-[var(--accent-text)] active:scale-95")
                     }
                   >
-                    {already ? "On list" : "Add"}
+                    {label}
                   </button>
                 </li>
               );

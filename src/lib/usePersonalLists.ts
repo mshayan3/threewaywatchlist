@@ -243,10 +243,14 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
         .delete()
         .match({ user_id: user.id, tmdb_id: m.tmdbId });
       if (error) return toast("Failed: " + error.message);
-      // Failsafe: removing from watched walks the watch counter back down
-      // (floored at 0), so an accidental watched-add can be fully undone.
-      const { error: cErr } = await supabase.rpc("decrement_watch_count", { p_tmdb: m.tmdbId });
-      if (cErr) toast("Watch count not updated: " + cErr.message);
+      // Failsafe: removing from watched clears the watch counter entirely
+      // (back to 0), so an accidental watched-add is fully wiped. Note this only
+      // happens on removal — moving a movie back to the watchlist keeps its count.
+      const { error: cErr } = await supabase
+        .from("watch_counts")
+        .delete()
+        .match({ user_id: user.id, tmdb_id: m.tmdbId });
+      if (cErr) toast("Watch count not reset: " + cErr.message);
       after();
     },
     [user, toast, after]

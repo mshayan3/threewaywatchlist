@@ -42,7 +42,7 @@ export default function PersonalMovieCard({
   return (
     <li className="group relative">
       <div
-        className="relative aspect-[2/3] overflow-hidden rounded-[13px] border border-line"
+        className="relative aspect-[3/4] overflow-hidden rounded-[13px] border border-line"
         style={{
           boxShadow: "var(--card-shadow)",
           ...(hasPoster ? {} : { background: posterGradient(movie.tmdbId) }),

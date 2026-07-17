@@ -181,7 +181,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={clearAvatar}
-                  className="rounded-[12px] border border-border bg-transparent px-4 py-2.5 text-[13px] font-bold text-dim transition-colors hover:border-accent2 hover:text-accent2"
+                  className="rounded-[12px] border border-border bg-transparent px-4 py-2.5 text-[13px] font-bold text-dim transition-colors hover:border-accent2 hover:text-text"
                 >
                   Remove
                 </button>

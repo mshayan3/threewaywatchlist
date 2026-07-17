@@ -170,7 +170,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={forgotPassword}
-                    className="text-[12.5px] font-medium text-accent2 hover:underline"
+                    className="text-[12.5px] font-medium text-text hover:underline"
                   >
                     Forgot?
                   </button>
@@ -213,7 +213,7 @@ export default function LoginPage() {
                 setIsSignUp((s) => !s);
                 setMsg(null);
               }}
-              className="mt-1.5 block w-full text-center text-[13.5px] font-bold text-accent2 hover:underline"
+              className="mt-1.5 block w-full text-center text-[13.5px] font-bold text-text hover:underline"
             >
               {isSignUp ? "Already have an account? Sign in" : "New here? Create an account"}
             </button>
@@ -223,7 +223,7 @@ export default function LoginPage() {
             <p
               className={
                 "mt-4 text-center text-[13.5px] font-medium " +
-                (msg.kind === "err" ? "text-accent2" : "text-accent")
+                (msg.kind === "err" ? "text-text" : "text-accent")
               }
             >
               {msg.text}

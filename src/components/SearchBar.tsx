@@ -72,11 +72,7 @@ export default function SearchBar({
   const open = results.length > 0 || !!error;
 
   return (
-    <div
-      ref={wrapRef}
-      className="relative transition-[margin] duration-200"
-      style={{ marginBottom: open ? 332 : 28 }}
-    >
+    <div ref={wrapRef} className="relative mb-[320px]">
       <svg
         className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint"
         width="18"
@@ -98,11 +94,11 @@ export default function SearchBar({
 
       {open && (
         <ul
-          className="absolute left-0 right-0 z-[15] mt-2 max-h-[316px] overflow-y-auto rounded-[var(--radius-sm)] border border-border bg-surface p-1.5"
+          className="absolute left-0 right-0 z-[15] mt-2 max-h-[300px] overflow-y-auto rounded-[var(--radius-sm)] border border-border bg-surface p-1.5"
           style={{ boxShadow: "var(--card-shadow-hover)" }}
         >
           {error ? (
-            <li className="p-3 text-[.9rem] text-accent2">Search failed — {error}</li>
+            <li className="p-3 text-[.9rem] text-text">Search failed — {error}</li>
           ) : (
             results.map((r) => {
               const hasPoster = !!r.poster_path;

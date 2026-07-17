@@ -180,7 +180,7 @@ export default function GroupView({
       </p>
 
       {stale && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border border-accent2/40 bg-accent2/10 px-4 py-3 text-[.88rem] text-accent2">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius)] border border-accent2/40 bg-accent2/10 px-4 py-3 text-[.88rem] text-text">
           <span>Couldn&apos;t refresh — showing the last data we loaded.</span>
           <button
             onClick={onRetry}
@@ -263,7 +263,7 @@ function MenuItem({
       onClick={onClick}
       className={
         "rounded-lg px-3 py-2.5 text-left text-[.88rem] font-semibold transition-colors " +
-        (danger ? "text-accent2 hover:bg-accent2/10" : "text-text hover:bg-chip")
+        (danger ? "text-text hover:bg-accent2/10" : "text-text hover:bg-chip")
       }
     >
       {children}

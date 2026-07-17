@@ -114,7 +114,7 @@ export default function GroupMovieCard({
           <button
             onClick={handleRemoveFromMine}
             title={`Remove ${movie.title} from my watchlist`}
-            className="group/rm w-full rounded-[9px] border border-border bg-chip py-2.5 text-center text-[13.5px] font-semibold text-chipink transition-colors hover:border-accent2 hover:text-accent2"
+            className="group/rm w-full rounded-[9px] border border-border bg-chip py-2.5 text-center text-[13.5px] font-semibold text-chipink transition-colors hover:border-accent2 hover:text-text"
           >
             <span className="group-hover/rm:hidden">✓ On your list</span>
             <span className="hidden group-hover/rm:inline">✕ Remove from mine</span>

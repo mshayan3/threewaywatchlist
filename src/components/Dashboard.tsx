@@ -196,7 +196,7 @@ export function Footer() {
         href="https://www.themoviedb.org/"
         target="_blank"
         rel="noopener noreferrer"
-        className="text-accent2 hover:underline"
+        className="text-text hover:underline"
       >
         TMDB
       </a>{" "}

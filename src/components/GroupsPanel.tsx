@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { colorFor, initials, normalizeCode } from "@/lib/helpers";
-import { Count } from "./MovieRow";
+import { Count, Gallery } from "./MovieRow";
 import { Footer } from "./Dashboard";
 import type { AppUser, Group } from "@/lib/types";
 
@@ -178,12 +178,12 @@ export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: Grou
       </div>
 
       {myGroups.length > 0 ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
+        <Gallery>
           {myGroups.map((g) => (
+            <li key={g.code}>
             <button
-              key={g.code}
               onClick={() => onEnter({ code: g.code, name: g.name })}
-              className="flex flex-col gap-5 rounded-[16px] border border-border bg-surface p-6 text-left transition-transform hover:-translate-y-1 hover:border-accent2"
+              className="flex h-full w-full flex-col gap-5 rounded-[16px] border border-border bg-surface p-6 text-left transition-transform hover:-translate-y-1 hover:border-accent2"
               style={{ boxShadow: "var(--card-shadow)" }}
             >
               <span className="flex items-center justify-between">
@@ -212,8 +212,9 @@ export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: Grou
                 </span>
               </span>
             </button>
+            </li>
           ))}
-        </div>
+        </Gallery>
       ) : (
         <p className="rounded-[var(--radius)] border border-dashed border-border px-4 py-10 text-center text-[.95rem] text-faint">
           You&apos;re not in any groups yet — create one or join with a friend&apos;s group name + password.

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import SearchBar from "./SearchBar";
 import PersonalMovieCard from "./PersonalMovieCard";
 import SortMenu from "./SortMenu";
-import { CardGrid } from "./MovieRow";
+import { Gallery } from "./MovieRow";
 import type { AppUser, PersonalMovie, TmdbResult } from "@/lib/types";
 
 interface DashboardProps {
@@ -79,16 +79,18 @@ export default function Dashboard({
         Everything you add here lands in your groups&apos; shared lists.
       </p>
 
-      <SearchBar
-        watchlistIds={watchlistIds}
-        watchedIds={watchedIds}
-        onAdd={handleAdd}
-        placeholder={
-          view === "watched"
-            ? "Add a movie to your watched list…"
-            : "Add a movie to your watchlist…"
-        }
-      />
+      <div className="max-w-[640px]">
+        <SearchBar
+          watchlistIds={watchlistIds}
+          watchedIds={watchedIds}
+          onAdd={handleAdd}
+          placeholder={
+            view === "watched"
+              ? "Add a movie to your watched list…"
+              : "Add a movie to your watchlist…"
+          }
+        />
+      </div>
 
       <div className="mb-8 flex flex-wrap items-end justify-between gap-3 border-b border-line">
         <Tabs
@@ -105,7 +107,7 @@ export default function Dashboard({
       </div>
 
       {active.length > 0 ? (
-        <CardGrid>
+        <Gallery>
           {view === "watchlist"
             ? active.map((m) => (
                 <PersonalMovieCard
@@ -125,7 +127,7 @@ export default function Dashboard({
                   onRemove={onRemoveFromWatched}
                 />
               ))}
-        </CardGrid>
+        </Gallery>
       ) : (
         <p className="rounded-[var(--radius)] border border-dashed border-border px-4 py-10 text-center text-[.95rem] text-faint">
           {view === "watchlist"

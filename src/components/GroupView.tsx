@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import GroupMovieCard from "./GroupMovieCard";
-import { CardGrid } from "./MovieRow";
+import { Gallery } from "./MovieRow";
 import { Tabs, Footer } from "./Dashboard";
 import SortMenu from "./SortMenu";
 import { colorFor, initials } from "@/lib/helpers";
@@ -210,7 +210,7 @@ export default function GroupView({
       </div>
 
       {active.length > 0 ? (
-        <CardGrid>
+        <Gallery>
           {active.map((m) => (
             <GroupMovieCard
               key={m.tmdbId}
@@ -223,7 +223,7 @@ export default function GroupView({
               onRemoveFromMine={onRemoveFromMine}
             />
           ))}
-        </CardGrid>
+        </Gallery>
       ) : (
         <p className="rounded-[var(--radius)] border border-dashed border-border px-4 py-10 text-center text-[.95rem] text-faint">
           {view === "common"

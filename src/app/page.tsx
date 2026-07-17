@@ -11,13 +11,10 @@ const HERO = [
 // Public landing page. Auth-gated routes live under /dashboard and /groups.
 export default function Landing() {
   return (
-    <div className="mx-auto min-h-screen max-w-[1180px] px-4 pb-14 pt-6 sm:px-6">
-      <div
-        className="overflow-hidden rounded-[20px] border border-border bg-frame"
-        style={{ boxShadow: "var(--card-shadow)" }}
-      >
-        {/* header */}
-        <header className="flex items-center justify-between gap-4 border-b border-line bg-bar px-5 py-4 sm:px-10">
+    <div className="min-h-screen">
+      {/* header */}
+      <header className="border-b border-line bg-bar">
+        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <div className="flex items-baseline gap-2.5">
             <span className="font-display text-[22px] font-bold tracking-[-0.02em]">Threeway</span>
             <span className="hidden text-[11px] font-semibold uppercase tracking-[0.22em] text-muted2 sm:inline">
@@ -33,10 +30,12 @@ export default function Landing() {
               Sign in
             </Link>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* hero */}
-        <div className="view-anim grid items-center gap-10 px-6 py-12 sm:px-16 sm:py-[76px] lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
+      {/* hero */}
+      <div className="mx-auto max-w-[1180px] px-5 sm:px-8">
+        <div className="view-anim grid items-center gap-10 py-14 sm:py-24 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
           <div>
             <div className="mb-6 inline-block rounded-full border border-border px-[15px] py-[7px] text-[12.5px] font-semibold text-faint">
               No more &ldquo;wait — have you seen it?&rdquo;
@@ -92,9 +91,11 @@ export default function Landing() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* footer bar */}
-        <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-bar px-5 py-6 sm:px-10">
+      {/* footer bar */}
+      <footer className="border-t border-line bg-bar">
+        <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-2 px-5 py-6 sm:px-8">
           <span className="text-[13px] text-faint">© 2026 Threeway Watchlist</span>
           <span className="text-[13px] text-faint">
             Movie data &amp; posters from{" "}
@@ -102,8 +103,8 @@ export default function Landing() {
               TMDB
             </a>
           </span>
-        </footer>
-      </div>
+        </div>
+      </footer>
     </div>
   );
 }

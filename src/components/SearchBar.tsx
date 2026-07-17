@@ -98,7 +98,7 @@ export default function SearchBar({
           style={{ boxShadow: "var(--card-shadow-hover)" }}
         >
           {error ? (
-            <li className="p-3 text-[.9rem] text-text">Search failed — {error}</li>
+            <li className="p-3 text-[.9rem] text-[var(--bad)]">Search failed — {error}</li>
           ) : (
             results.map((r) => {
               const hasPoster = !!r.poster_path;

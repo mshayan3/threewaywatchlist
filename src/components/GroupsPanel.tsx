@@ -165,7 +165,7 @@ export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: Grou
             </>
           )}
           {msg && (
-            <p className={"mt-3.5 text-center text-[13.5px] font-medium " + (msg.kind === "err" ? "text-text" : "text-accent")}>
+            <p className={"mt-3.5 text-center text-[13.5px] font-medium " + (msg.kind === "err" ? "text-[var(--bad)]" : "text-[var(--good)]")}>
               {msg.text}
             </p>
           )}

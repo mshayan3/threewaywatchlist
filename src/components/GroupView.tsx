@@ -12,6 +12,7 @@ interface GroupViewProps {
   group: Group;
   movies: GroupMovie[];
   members: Member[];
+  myUserId?: string;
   stale?: boolean;
   myWatchlistIds: Set<number>;
   myWatchedIds: Set<number>;
@@ -56,6 +57,7 @@ export default function GroupView({
   group,
   movies,
   members,
+  myUserId,
   stale,
   myWatchlistIds,
   myWatchedIds,
@@ -91,6 +93,15 @@ export default function GroupView({
   );
   const active = view === "common" ? common : watched;
 
+  // Current user first, like the design's "You, Theo, Ravi & Jess".
+  const ordered = useMemo(() => {
+    if (!myUserId) return members;
+    return [
+      ...members.filter((m) => m.user_id === myUserId),
+      ...members.filter((m) => m.user_id !== myUserId),
+    ];
+  }, [members, myUserId]);
+
   return (
     <>
     <main className="view-anim relative z-[2] mx-auto max-w-[1720px] px-4 pt-4 sm:px-8 lg:px-12">
@@ -122,7 +133,7 @@ export default function GroupView({
                 e.stopPropagation();
                 setMenuOpen((o) => !o);
               }}
-              className="grid h-8 w-8 place-items-center rounded-full text-dim transition-colors hover:bg-chip hover:text-text"
+              className="grid h-[30px] w-[30px] place-items-center rounded-[8px] border border-border text-faint transition-colors hover:text-text"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" />
@@ -147,7 +158,7 @@ export default function GroupView({
 
         <div className="flex items-center gap-3">
           <div className="flex">
-            {members.slice(0, 5).map((m) => {
+            {ordered.slice(0, 5).map((m) => {
               const label = m.name || m.user_name;
               return (
                 <span
@@ -166,9 +177,9 @@ export default function GroupView({
               );
             })}
           </div>
-          {members.length > 0 && (
+          {ordered.length > 0 && (
             <span className="text-[13.5px] font-medium text-faint">
-              {memberSummary(members)}
+              {memberSummary(ordered, myUserId)}
             </span>
           )}
         </div>
@@ -238,9 +249,11 @@ export default function GroupView({
   );
 }
 
-// "Ada", "Ada & Ravi", "Ada, Ravi & Jess", "Ada, Ravi, Jess +2"
-function memberSummary(members: Member[]): string {
-  const names = members.map((m) => (m.name || m.user_name || "…").split(/\s+/)[0]);
+// "You", "You & Ravi", "You, Ravi & Jess", "You, Ravi, Jess +2"
+function memberSummary(members: Member[], myUserId?: string): string {
+  const names = members.map((m) =>
+    m.user_id === myUserId ? "You" : (m.name || m.user_name || "…").split(/\s+/)[0]
+  );
   if (names.length <= 1) return names[0] || "";
   if (names.length === 2) return `${names[0]} & ${names[1]}`;
   if (names.length === 3) return `${names[0]}, ${names[1]} & ${names[2]}`;

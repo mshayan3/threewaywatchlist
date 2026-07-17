@@ -223,7 +223,7 @@ export default function LoginPage() {
             <p
               className={
                 "mt-4 text-center text-[13.5px] font-medium " +
-                (msg.kind === "err" ? "text-text" : "text-accent")
+                (msg.kind === "err" ? "text-[var(--bad)]" : "text-[var(--good)]")
               }
             >
               {msg.text}

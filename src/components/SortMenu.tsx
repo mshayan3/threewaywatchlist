@@ -42,7 +42,7 @@ export default function SortMenu<T extends string>({
           e.stopPropagation();
           setOpen((o) => !o);
         }}
-        className="flex items-center gap-1.5 rounded-[12px] border border-border bg-surface px-3.5 py-2 text-[13px] font-bold text-text transition-colors hover:border-accent"
+        className="flex items-center gap-1.5 rounded-[10px] border border-border bg-transparent px-3.5 py-2 text-[13.5px] font-medium text-dim transition-colors hover:border-accent2 hover:text-text"
       >
         <span className="font-semibold text-dim">{label}:</span>
         {current?.label ?? ""}

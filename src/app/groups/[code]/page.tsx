@@ -237,6 +237,7 @@ export default function GroupPage() {
         group={group}
         movies={movies}
         members={members}
+        myUserId={user?.id}
         stale={stale}
         myWatchlistIds={personal.watchlistIds}
         myWatchedIds={personal.watchedIds}

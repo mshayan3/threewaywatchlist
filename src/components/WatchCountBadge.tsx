@@ -8,7 +8,8 @@ export default function WatchCountBadge({ count }: { count: number }) {
   if (!count || count <= 0) return null;
   return (
     <span
-      className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[11px] font-extrabold text-white backdrop-blur-sm"
+      className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold text-[#f4eedf] backdrop-blur-sm"
+      style={{ background: "var(--overlay)" }}
       title={`You've watched this ${count} time${count > 1 ? "s" : ""}`}
     >
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">

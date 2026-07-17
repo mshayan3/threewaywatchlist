@@ -14,21 +14,12 @@ interface TopBarProps {
 
 function Logo() {
   return (
-    <Link href="/dashboard" className="flex min-w-0 flex-none items-center gap-2.5">
-      <span
-        className="grid h-[30px] w-[30px] place-items-center rounded-[9px]"
-        style={{
-          background: "conic-gradient(from 210deg, var(--accent), var(--accent2))",
-          boxShadow: "0 6px 16px -4px var(--accent-glow)",
-        }}
-      >
-        <span
-          className="h-3.5 w-3.5 rounded-full"
-          style={{ background: "linear-gradient(90deg,#fff 50%, rgba(255,255,255,.25) 50%)" }}
-        />
+    <Link href="/dashboard" className="flex min-w-0 flex-none items-baseline gap-2.5">
+      <span className="font-display text-[22px] font-bold tracking-[-0.02em]">
+        Threeway
       </span>
-      <span className="hidden font-display text-[18px] font-extrabold tracking-[-0.01em] sm:inline">
-        Threeway Watchlist
+      <span className="hidden text-[11px] font-semibold uppercase tracking-[0.22em] text-muted2 sm:inline">
+        watchlist
       </span>
     </Link>
   );
@@ -52,21 +43,21 @@ export default function TopBar({ user, onSignOut }: TopBarProps) {
   };
 
   const seg = (active: boolean) =>
-    "rounded-[10px] px-4 py-2 text-[13.5px] font-bold transition-colors sm:px-[18px] " +
+    "rounded-full px-4 py-2 text-[13.5px] font-semibold transition-colors sm:px-6 " +
     (active
-      ? "bg-accent2 text-white"
-      : "bg-transparent text-dim hover:text-text");
+      ? "bg-surface2 text-text shadow-[0_1px_2px_rgba(50,40,20,.12)]"
+      : "bg-transparent text-faint hover:text-text");
 
   return (
     <header
-      className="sticky top-0 z-[20] border-b border-border backdrop-blur-md"
+      className="sticky top-0 z-[20] border-b border-line backdrop-blur-md"
       style={{ background: "var(--glass)" }}
     >
       <div className="mx-auto flex max-w-[1140px] items-center justify-between gap-3 px-4 py-3.5 sm:gap-4 sm:px-8 sm:py-4">
         <Logo />
 
         {user && (
-          <nav className="flex flex-none gap-1 rounded-[14px] border border-border bg-chip p-[5px]">
+          <nav className="flex flex-none gap-0.5 rounded-full bg-chip p-1">
             <Link href="/dashboard" className={seg(onIndividual)}>
               Individual
             </Link>
@@ -85,11 +76,12 @@ export default function TopBar({ user, onSignOut }: TopBarProps) {
                 title="Your profile"
                 aria-label="Your profile"
                 className={
-                  "grid h-[38px] w-[38px] flex-none place-items-center overflow-hidden rounded-xl bg-accent2 text-[13px] font-extrabold text-white transition-all hover:opacity-90 active:scale-95 " +
+                  "grid h-[38px] w-[38px] flex-none place-items-center overflow-hidden rounded-full text-[13px] font-bold text-[#3b2e1e] transition-all hover:opacity-90 active:scale-95 " +
                   (onProfile
-                    ? "ring-2 ring-accent ring-offset-2 ring-offset-[var(--surface)]"
+                    ? "ring-2 ring-accent2 ring-offset-2 ring-offset-[var(--bar)]"
                     : "")
                 }
+                style={{ background: "#b79a78" }}
               >
                 {user.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -103,7 +95,7 @@ export default function TopBar({ user, onSignOut }: TopBarProps) {
                 onClick={handleSignOut}
                 title="Sign out"
                 aria-label="Sign out"
-                className="grid h-[38px] w-[38px] flex-none place-items-center rounded-xl border border-border bg-chip text-dim transition-colors hover:text-text active:scale-95"
+                className="grid h-[38px] w-[38px] flex-none place-items-center rounded-full border border-border text-faint transition-colors hover:text-text active:scale-95"
               >
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

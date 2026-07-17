@@ -1,90 +1,115 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   Threeway Watchlist — "Neon Movie Night" theme (dark default + light)
-   Lime primary (#c7f24a) · coral accent (#ff7a5c) · amber (#ffce5c)
-   Display: Bricolage Grotesque · Body: Plus Jakarta Sans
+   Threeway Watchlist — "Paper & Reel" theme (warm paper, light + dark)
+   Ink primary button · terracotta accent · sage / amber / rust verdicts
+   Display: Bricolage Grotesque · Body: Hanken Grotesk
    ========================================================================== */
 :root {
-  /* dark is the default theme */
-  --page-bg:
-    radial-gradient(1200px 720px at 74% -12%, #23301a 0%, transparent 54%),
-    radial-gradient(900px 620px at -2% 108%, #2a1626 0%, transparent 52%),
-    #14101a;
-  --surface: #1e1926;
-  --border: #332c3f;
-  --text: #f5f0f8;
-  --text-dim: #b0a6c0;
-  --text-faint: #776e8a;
+  /* light is the default here, but the app boots dark via layout script */
+  --page-bg: #d9d3c6;
+  --frame: #efe8db;
+  --bar: #f4eee1;
+  --surface: #f7f2e7;
+  --surface2: #fbf7ee;
 
-  --accent: #c7f24a;
-  --accent-text: #181f08;
-  --accent2: #ff7a5c;
-  --amber: #ffce5c;
-  --accent-glow: rgba(199, 242, 74, 0.4);
+  --text: #221d16;
+  --text-dim: #5c5344;
+  --text-faint: #8b8171;
+  --muted2: #a0967f;
 
-  --chip-bg: rgba(255, 255, 255, 0.06);
-  --input-bg: rgba(255, 255, 255, 0.045);
-  --glass: rgba(24, 20, 30, 0.76);
-  --blob1: rgba(150, 220, 60, 0.34);
-  --blob2: rgba(230, 90, 150, 0.3);
+  --border: #d8cdb8;   /* line2 — card / control borders */
+  --line: #e3dac9;     /* subtle dividers */
+  --chip-bg: #e7decb;
+  --chip-ink: #4a4231;
+  --input-bg: #fbf7ee;
 
-  --card-shadow: 0 12px 32px -14px rgba(0, 0, 0, 0.62);
-  --card-shadow-hover: 0 26px 50px -16px rgba(0, 0, 0, 0.74);
+  /* primary action = dark ink button with cream text */
+  --accent: #231e16;
+  --accent-text: #f2eadb;
+  /* secondary / links / errors = warm terracotta */
+  --accent2: #c07a48;
+  --amber: #c08a3e;
 
-  --radius: 24px;
+  /* verdict colors (good / okay / bad) */
+  --good: #6e9166;
+  --okay: #c08a3e;
+  --bad: #c06148;
+
+  --overlay: rgba(28, 22, 14, 0.62);
+  --glass: rgba(244, 238, 225, 0.82);
+
+  --card-shadow: 0 22px 48px -26px rgba(45, 35, 20, 0.32);
+  --card-shadow-hover: 0 34px 70px -26px rgba(45, 35, 20, 0.4);
+
+  --radius: 20px;
   --radius-sm: 14px;
 }
 
-[data-theme="light"] {
-  --page-bg:
-    radial-gradient(1100px 700px at 80% -12%, #eef7cf 0%, transparent 52%),
-    radial-gradient(900px 620px at -6% 108%, #ffe2d6 0%, transparent 55%),
-    #f6f2ea;
-  --surface: #ffffff;
-  --border: #eae3d7;
-  --text: #1c1622;
-  --text-dim: #6b6376;
-  --text-faint: #9a92a6;
+[data-theme="dark"] {
+  --page-bg: #131009;
+  --frame: #211c13;
+  --bar: #28221a;
+  --surface: #2a2417;
+  --surface2: #322a1b;
 
-  --accent: #a6d92a;
-  --accent-text: #16200a;
-  --accent2: #f2653f;
-  --amber: #f0a92a;
-  --accent-glow: rgba(166, 217, 42, 0.45);
+  --text: #f1eadc;
+  --text-dim: #c4baa4;
+  --text-faint: #9c927c;
+  --muted2: #857c69;
 
-  --chip-bg: #f2ede3;
-  --input-bg: #f5f1e8;
-  --glass: rgba(255, 255, 255, 0.82);
-  --blob1: rgba(180, 225, 60, 0.5);
-  --blob2: rgba(255, 150, 110, 0.4);
+  --border: #413827;
+  --line: #39301f;
+  --chip-bg: #372f20;
+  --chip-ink: #dacfb6;
+  --input-bg: #322a1b;
 
-  --card-shadow: 0 12px 30px -16px rgba(60, 50, 30, 0.26);
-  --card-shadow-hover: 0 26px 46px -18px rgba(60, 50, 30, 0.34);
+  --accent: #efe6d2;
+  --accent-text: #221d14;
+  --accent2: #d98e5a;
+  --amber: #d9a24e;
+
+  --good: #86a97c;
+  --okay: #d9a24e;
+  --bad: #d1795f;
+
+  --overlay: rgba(0, 0, 0, 0.62);
+  --glass: rgba(20, 16, 9, 0.78);
+
+  --card-shadow: 0 28px 60px -28px rgba(0, 0, 0, 0.66);
+  --card-shadow-hover: 0 40px 80px -28px rgba(0, 0, 0, 0.72);
 }
 
 /* Expose tokens as Tailwind utility names (bg-surface, text-dim, border-border…) */
 @theme inline {
   --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-frame: var(--frame);
+  --color-bar: var(--bar);
   --color-border: var(--border);
+  --color-line: var(--line);
   --color-text: var(--text);
   --color-dim: var(--text-dim);
   --color-faint: var(--text-faint);
+  --color-muted2: var(--muted2);
   --color-accent: var(--accent);
   --color-accent2: var(--accent2);
   --color-amber: var(--amber);
+  --color-good: var(--good);
+  --color-okay: var(--okay);
+  --color-bad: var(--bad);
   --color-chip: var(--chip-bg);
+  --color-chipink: var(--chip-ink);
   --color-input: var(--input-bg);
   --font-display: "Bricolage Grotesque", system-ui, sans-serif;
-  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-sans: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 html, body { height: 100%; margin: 0; padding: 0; }
 
-/* Themed scrollbar — slim, rounded, subtle. Shows on scroll/hover; the thumb is
-   nearly transparent at rest so it stays out of the way (auto-hide feel). */
+/* Themed scrollbar — slim, rounded, subtle. */
 * {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
@@ -116,27 +141,16 @@ body {
   transition: background 0.4s, color 0.4s;
 }
 
-a { color: inherit; text-decoration: none; }
+a { color: var(--accent2); text-decoration: none; }
+a:hover { opacity: 0.85; }
 ::placeholder { color: currentColor; opacity: 0.5; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::selection { background: var(--chip-bg); }
+:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
 button { -webkit-tap-highlight-color: transparent; font-family: inherit; }
 
-/* animations from the design */
-@keyframes floaty  { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(20px,-24px) scale(1.06); } }
-@keyframes floaty2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-26px,18px) scale(1.08); } }
+/* view entrance animation */
 @keyframes fadeUp  { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 .view-anim { animation: fadeUp 0.5s ease both; }
-
-/* ambient background blobs */
-.blob {
-  position: fixed;
-  border-radius: 50%;
-  filter: blur(78px);
-  pointer-events: none;
-  z-index: 0;
-}
-.blob-1 { top: -120px; right: -80px; width: 420px; height: 420px; background: var(--blob1); opacity: 0.7; animation: floaty 14s ease-in-out infinite; }
-.blob-2 { bottom: -140px; left: -100px; width: 460px; height: 460px; background: var(--blob2); opacity: 0.6; animation: floaty2 17s ease-in-out infinite; }
 
 /* line clamp for card titles */
 .clamp-2 {

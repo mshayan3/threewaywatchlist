@@ -68,13 +68,13 @@ export default function GroupMovieCard({
   };
 
   return (
-    <li
-      className="relative rounded-[24px] border border-border bg-surface transition-transform duration-200 hover:-translate-y-1.5"
-      style={{ boxShadow: "var(--card-shadow)" }}
-    >
+    <li className="relative">
       <div
-        className="relative mx-2 mt-2 aspect-square overflow-hidden rounded-[18px]"
-        style={hasPoster ? undefined : { background: posterGradient(movie.tmdbId) }}
+        className="relative aspect-[2/3] overflow-hidden rounded-[13px] border border-line"
+        style={{
+          boxShadow: "var(--card-shadow)",
+          ...(hasPoster ? {} : { background: posterGradient(movie.tmdbId) }),
+        }}
       >
         {hasPoster ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -85,40 +85,36 @@ export default function GroupMovieCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <span className="absolute inset-0 flex items-center justify-center px-3 text-center font-display text-[17px] font-extrabold uppercase leading-[1.05] tracking-[0.04em] text-white/95">
+          <span className="absolute inset-x-0 bottom-0 p-3.5 font-display text-[19px] font-semibold leading-[1.1] text-white/95">
             {movie.title}
           </span>
         )}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ background: "radial-gradient(circle at 28% 16%, rgba(255,255,255,.2), transparent 55%)" }}
-        />
         <OverlayAvatars people={people} />
         <WatchCountBadge count={watchCount} />
+
+        {movie.rating > 0 && (
+          <div
+            className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold text-[#f4eedf]"
+            style={{ background: "var(--overlay)" }}
+          >
+            <span className="text-amber">★</span> {movie.rating.toFixed(1)}
+          </div>
+        )}
       </div>
 
-      {movie.rating > 0 && (
-        <div
-          className="absolute right-4 top-0 -translate-y-[42%] rotate-6 rounded-[13px] bg-amber px-2.5 py-1.5 text-[12px] font-extrabold text-[#2a1e00]"
-          style={{ boxShadow: "0 6px 16px rgba(0,0,0,.28)" }}
-        >
-          ★ {movie.rating.toFixed(1)}
-        </div>
-      )}
-
-      <div className="px-3.5 pb-4 pt-3">
-        <div className="clamp-2 min-h-[2.4em] text-[15px] font-bold leading-[1.2]">{movie.title}</div>
-        <div className="mb-3 mt-0.5 text-[12.5px] text-dim">{meta}</div>
+      <div className="px-0.5 pt-3">
+        <div className="clamp-2 min-h-[2.4em] text-[15px] font-semibold leading-[1.25]">{movie.title}</div>
+        <div className="mb-3 mt-0.5 text-[13px] text-faint">{meta}</div>
 
         {iWatched ? (
-          <div className="w-full cursor-default rounded-[14px] border border-border bg-transparent py-2.5 text-center text-[13px] font-bold text-dim">
+          <div className="w-full cursor-default rounded-[9px] border border-border py-2.5 text-center text-[13.5px] font-semibold text-faint">
             ✓ Seen it
           </div>
         ) : isMine ? (
           <button
             onClick={handleRemoveFromMine}
             title={`Remove ${movie.title} from my watchlist`}
-            className="group/rm w-full rounded-[14px] border border-border bg-transparent py-2.5 text-center text-[13px] font-bold text-dim transition-colors hover:border-accent2 hover:text-accent2"
+            className="group/rm w-full rounded-[9px] border border-border bg-chip py-2.5 text-center text-[13.5px] font-semibold text-chipink transition-colors hover:border-accent2 hover:text-accent2"
           >
             <span className="group-hover/rm:hidden">✓ On your list</span>
             <span className="hidden group-hover/rm:inline">✕ Remove from mine</span>
@@ -127,9 +123,9 @@ export default function GroupMovieCard({
           <button
             onClick={() => onAddToMine(movie)}
             title={`Add ${movie.title} to my watchlist`}
-            className="w-full rounded-[14px] bg-accent2 py-2.5 text-[13px] font-bold text-white transition-transform active:scale-95"
+            className="w-full rounded-[9px] border border-border py-2.5 text-[13.5px] font-semibold text-text transition-colors hover:border-accent2"
           >
-            + Add to mine
+            + Add to your list
           </button>
         )}
       </div>

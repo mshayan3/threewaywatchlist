@@ -1,7 +1,7 @@
 // Small presentation helpers.
 
-// Fiery Ocean avatar palette — all dark enough for white initials.
-const PALETTE = ["#c1121f", "#780000", "#003049", "#2f6d8c", "#8a1b23", "#0f5c7a"];
+// Muted earth-tone avatar palette — all deep enough for white initials.
+const PALETTE = ["#6e7e6f", "#8a6d52", "#5f6e86", "#856a66", "#7a7550", "#937b54"];
 
 export function initials(name: string | null | undefined): string {
   const p = (name || "?").trim().split(/\s+/);
@@ -30,14 +30,16 @@ export function noPoster(w: number, h: number): string {
 }
 
 // Deterministic gradient for a movie poster fallback (keyed on title/id).
+// Muted earth tones — sage, tan, slate-blue, mauve, olive, sand — each paired
+// with a ~22%-darker shade (matching the design's diagonal poster fills).
 const GRADIENTS = [
-  "linear-gradient(150deg,#f2ad6d,#c04f7a)",
-  "linear-gradient(150deg,#4c5da6,#0f1830)",
-  "linear-gradient(150deg,#f0607f,#8f2748)",
-  "linear-gradient(150deg,#83bd6f,#2f7a68)",
-  "linear-gradient(150deg,#e23b3b,#1a1414)",
-  "linear-gradient(150deg,#7c5cff,#241a52)",
-  "linear-gradient(150deg,#ffb457,#b5471f)",
+  "linear-gradient(150deg,#8a9a8b,#6b786c)",
+  "linear-gradient(150deg,#b79a78,#8f785d)",
+  "linear-gradient(150deg,#7c8aa0,#606b7c)",
+  "linear-gradient(150deg,#a98a86,#836b68)",
+  "linear-gradient(150deg,#9c9668,#7a7551)",
+  "linear-gradient(150deg,#c0a17c,#957d61)",
+  "linear-gradient(150deg,#8f8a76,#6f6b5c)",
 ];
 export function posterGradient(seed: string | number): string {
   const s = String(seed);

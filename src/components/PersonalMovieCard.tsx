@@ -40,13 +40,13 @@ export default function PersonalMovieCard({
   };
 
   return (
-    <li
-      className="group relative rounded-[24px] border border-border bg-surface transition-transform duration-200 hover:-translate-y-1.5"
-      style={{ boxShadow: "var(--card-shadow)" }}
-    >
+    <li className="group relative">
       <div
-        className="relative mx-2 mt-2 aspect-square overflow-hidden rounded-[18px]"
-        style={hasPoster ? undefined : { background: posterGradient(movie.tmdbId) }}
+        className="relative aspect-[2/3] overflow-hidden rounded-[13px] border border-line"
+        style={{
+          boxShadow: "var(--card-shadow)",
+          ...(hasPoster ? {} : { background: posterGradient(movie.tmdbId) }),
+        }}
       >
         {hasPoster ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -57,20 +57,27 @@ export default function PersonalMovieCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <span className="absolute inset-0 flex items-center justify-center px-3 text-center font-display text-[17px] font-extrabold uppercase leading-[1.05] tracking-[0.04em] text-white/95">
+          <span className="absolute inset-x-0 bottom-0 p-3.5 font-display text-[19px] font-semibold leading-[1.1] text-white/95">
             {movie.title}
           </span>
         )}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ background: "radial-gradient(circle at 28% 16%, rgba(255,255,255,.2), transparent 55%)" }}
-        />
+
+        {movie.rating > 0 && (
+          <div
+            className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold text-[#f4eedf]"
+            style={{ background: "var(--overlay)" }}
+          >
+            <span className="text-amber">★</span> {movie.rating.toFixed(1)}
+          </div>
+        )}
+
         <WatchCountBadge count={movie.watchCount} />
         <button
           onClick={handleRemove}
           title="Remove"
           aria-label={`Remove ${movie.title}`}
-          className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-black/50 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/70 focus-visible:opacity-100 group-hover:opacity-100"
+          className="absolute left-2.5 top-2.5 grid h-7 w-7 place-items-center rounded-full text-white opacity-0 backdrop-blur-sm transition-opacity hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-100"
+          style={{ background: "var(--overlay)" }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
@@ -78,30 +85,24 @@ export default function PersonalMovieCard({
         </button>
       </div>
 
-      {movie.rating > 0 && (
-        <div
-          className="absolute right-4 top-0 -translate-y-[42%] rotate-6 rounded-[13px] bg-amber px-2.5 py-1.5 text-[12px] font-extrabold text-[#2a1e00]"
-          style={{ boxShadow: "0 6px 16px rgba(0,0,0,.28)" }}
-        >
-          ★ {movie.rating.toFixed(1)}
-        </div>
-      )}
-
-      <div className="px-3.5 pb-4 pt-3">
-        <div className="clamp-2 min-h-[2.4em] text-[15px] font-bold leading-[1.2]">{movie.title}</div>
-        <div className="mb-3 mt-0.5 text-[12.5px] text-dim">{meta}</div>
+      <div className="px-0.5 pt-3">
+        <div className="clamp-2 min-h-[2.4em] text-[15px] font-semibold leading-[1.25]">{movie.title}</div>
+        <div className="mb-3 mt-0.5 text-[13px] text-faint">{meta}</div>
 
         {variant === "watchlist" ? (
           <button
             onClick={() => onMarkWatched?.(movie)}
-            className="w-full rounded-[14px] bg-accent py-2.5 text-[13px] font-bold text-[var(--accent-text)] transition-transform active:scale-95"
+            className="flex w-full items-center justify-center gap-1.5 rounded-[9px] border border-border py-2.5 text-[13.5px] font-semibold text-text transition-colors hover:border-accent2"
           >
-            ✓ Mark watched
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Mark watched
           </button>
         ) : (
           <button
             onClick={() => onMoveToWatchlist?.(movie)}
-            className="w-full rounded-[14px] border border-border bg-chip py-2.5 text-[13px] font-bold text-text transition-colors hover:border-accent"
+            className="flex w-full items-center justify-center gap-1.5 rounded-[9px] border border-border py-2.5 text-[13.5px] font-semibold text-dim transition-colors hover:border-accent2 hover:text-text"
           >
             ↺ Move to watchlist
           </button>

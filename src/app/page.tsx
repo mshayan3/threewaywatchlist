@@ -1,129 +1,109 @@
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 
+// Muted earth-tone "posters" for the hero preview card.
+const HERO = [
+  { title: "Past Lives", from: "#8a9a8b", to: "#6b786c" },
+  { title: "Perfect Days", from: "#b79a78", to: "#8f785d" },
+  { title: "Drive", from: "#9c9668", to: "#7a7551" },
+];
+
 // Public landing page. Auth-gated routes live under /dashboard and /groups.
 export default function Landing() {
   return (
-    <div className="min-h-screen">
-      <header className="relative z-[5] mx-auto flex max-w-[1140px] items-center justify-between gap-5 px-5 py-5 sm:px-8">
-        <div className="flex items-center gap-2.5">
-          <span
-            className="grid h-[30px] w-[30px] place-items-center rounded-[9px]"
-            style={{
-              background: "conic-gradient(from 210deg, var(--accent), var(--accent2))",
-              boxShadow: "0 6px 16px -4px var(--accent-glow)",
-            }}
-          >
-            <span
-              className="h-3.5 w-3.5 rounded-full"
-              style={{ background: "linear-gradient(90deg,#fff 50%, rgba(255,255,255,.25) 50%)" }}
-            />
-          </span>
-          <span className="font-display text-[18px] font-extrabold tracking-[-0.01em]">
-            Threeway Watchlist
-          </span>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <ThemeToggle />
-          <Link
-            href="/login"
-            className="rounded-full border border-border bg-chip px-[18px] py-2.5 text-[14px] font-bold text-text transition-colors hover:border-accent"
-          >
-            Sign in
-          </Link>
-        </div>
-      </header>
-
-      <main className="view-anim relative z-[2] mx-auto max-w-[760px] px-6 pb-10 pt-[70px] text-center">
-        <div className="mb-[26px] inline-flex items-center gap-2 rounded-full border border-border bg-chip px-[15px] py-[7px] text-[13px] font-semibold text-dim">
-          <span className="h-[7px] w-[7px] rounded-full bg-accent2" />
-          Built for movie nights with friends
-        </div>
-
-        <h1 className="m-0 mb-[22px] font-display text-[clamp(40px,6.2vw,66px)] font-extrabold leading-[1.03] tracking-[-0.025em]">
-          Watch something
-          <br />
-          you <span className="text-accent2">all</span> still{" "}
-          <span
-            className="text-transparent"
-            style={{
-              background: "linear-gradient(120deg, var(--accent2), var(--amber))",
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-            }}
-          >
-            need to see.
-          </span>
-        </h1>
-
-        <p className="mx-auto mb-[34px] max-w-[520px] text-[18px] leading-[1.6] text-dim">
-          Keep your own movie watchlist, then pool it with friends. Each group shows only
-          the films <strong className="font-semibold text-text">nobody</strong> has watched
-          yet — so picking movie night is effortless.
-        </p>
-
-        <div className="flex flex-wrap items-center justify-center gap-3.5">
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2.5 rounded-full bg-accent px-7 py-[15px] text-[16px] font-extrabold text-[var(--accent-text)] transition-transform active:scale-[.98]"
-            style={{ boxShadow: "0 14px 34px -10px var(--accent-glow)" }}
-          >
-            Get started <span className="text-[18px]">→</span>
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-full border border-border bg-chip px-6 py-[15px] text-[16px] font-bold text-text transition-colors hover:border-accent"
-          >
-            I have an account
-          </Link>
-        </div>
-
-        <div className="mt-[34px] flex items-center justify-center gap-3">
-          <div className="flex">
-            <Avatar bg="#ef4444">MS</Avatar>
-            <Avatar bg="#6366f1" overlap>BF</Avatar>
-            <Avatar bg="#14b8a6" overlap>JD</Avatar>
+    <div className="mx-auto min-h-screen max-w-[1180px] px-4 pb-14 pt-6 sm:px-6">
+      <div
+        className="overflow-hidden rounded-[20px] border border-border bg-frame"
+        style={{ boxShadow: "var(--card-shadow)" }}
+      >
+        {/* header */}
+        <header className="flex items-center justify-between gap-4 border-b border-line bg-bar px-5 py-4 sm:px-10">
+          <div className="flex items-baseline gap-2.5">
+            <span className="font-display text-[22px] font-bold tracking-[-0.02em]">Threeway</span>
+            <span className="hidden text-[11px] font-semibold uppercase tracking-[0.22em] text-muted2 sm:inline">
+              watchlist
+            </span>
           </div>
-          <span className="text-[13px] text-faint">
-            Muhammad + 2 friends already picking tonight
-          </span>
+          <div className="flex items-center gap-3.5">
+            <ThemeToggle />
+            <Link
+              href="/login"
+              className="rounded-full bg-accent px-5 py-2.5 text-[14px] font-semibold text-[var(--accent-text)] transition-transform active:scale-95"
+            >
+              Sign in
+            </Link>
+          </div>
+        </header>
+
+        {/* hero */}
+        <div className="view-anim grid items-center gap-10 px-6 py-12 sm:px-16 sm:py-[76px] lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
+          <div>
+            <div className="mb-6 inline-block rounded-full border border-border px-[15px] py-[7px] text-[12.5px] font-semibold text-faint">
+              No more &ldquo;wait — have you seen it?&rdquo;
+            </div>
+            <h1 className="m-0 mb-6 font-display text-[clamp(38px,5.4vw,60px)] font-semibold leading-[1.02] tracking-[-0.025em]">
+              Everybody&apos;s watchlist, minus what you&apos;ve already seen.
+            </h1>
+            <p className="m-0 mb-10 max-w-[445px] text-[18px] leading-[1.6] text-dim">
+              Keep your own list of movies to watch. Pool it with your friends and Threeway
+              quietly hides anything someone&apos;s already seen — so you&apos;re left with stuff
+              you can actually watch together.
+            </p>
+            <div className="flex flex-wrap items-center gap-3.5">
+              <Link
+                href="/login"
+                className="rounded-[12px] bg-accent px-[30px] py-[15px] text-[15px] font-semibold text-[var(--accent-text)] transition-transform active:scale-[.98]"
+              >
+                Get started
+              </Link>
+              <Link
+                href="/login"
+                className="rounded-[12px] border border-border px-7 py-[15px] text-[15px] font-semibold text-text transition-colors hover:border-accent2"
+              >
+                I&apos;ve got an account
+              </Link>
+            </div>
+          </div>
+
+          {/* preview card */}
+          <div className="relative rounded-[18px] border border-border bg-surface p-7">
+            <div className="mb-5 flex items-center justify-between">
+              <div className="text-[14px] font-bold">Roommates</div>
+              <div className="text-[12.5px] font-semibold text-faint">7 movies everyone still needs</div>
+            </div>
+            <div className="grid grid-cols-3 gap-3.5">
+              {HERO.map((m) => (
+                <div
+                  key={m.title}
+                  className="flex aspect-[2/3] items-end rounded-[10px] p-3 font-display text-[15px] font-semibold leading-[1.12] text-white/95"
+                  style={{ background: `linear-gradient(150deg, ${m.from}, ${m.to})` }}
+                >
+                  {m.title}
+                </div>
+              ))}
+            </div>
+            <div className="mt-[18px] flex items-center gap-2.5 rounded-[11px] bg-chip px-3.5 py-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: "var(--good)" }} aria-hidden="true">
+                <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <div className="text-[13px] text-dim">
+                <b className="text-text">Aftersun</b> hidden — Theo&apos;s already seen it.
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
 
-      <footer className="relative z-[2] mt-11 px-6 text-center text-[12.5px] text-faint">
-        Movie data from{" "}
-        <a
-          href="https://www.themoviedb.org/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent2 hover:underline"
-        >
-          TMDB
-        </a>{" "}
-        · not endorsed or certified by TMDB.
-      </footer>
+        {/* footer bar */}
+        <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-bar px-5 py-6 sm:px-10">
+          <span className="text-[13px] text-faint">© 2026 Threeway Watchlist</span>
+          <span className="text-[13px] text-faint">
+            Movie data &amp; posters from{" "}
+            <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">
+              TMDB
+            </a>
+          </span>
+        </footer>
+      </div>
     </div>
-  );
-}
-
-function Avatar({
-  children,
-  bg,
-  overlap,
-}: {
-  children: React.ReactNode;
-  bg: string;
-  overlap?: boolean;
-}) {
-  return (
-    <span
-      className={
-        "grid h-[30px] w-[30px] place-items-center rounded-full border-2 text-[10px] font-extrabold text-white " +
-        (overlap ? "-ml-2.5" : "")
-      }
-      style={{ background: bg, borderColor: "var(--surface)" }}
-    >
-      {children}
-    </span>
   );
 }

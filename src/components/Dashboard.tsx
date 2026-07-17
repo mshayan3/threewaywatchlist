@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import SearchBar from "./SearchBar";
 import PersonalMovieCard from "./PersonalMovieCard";
 import SortMenu from "./SortMenu";
-import { Count, CardGrid } from "./MovieRow";
+import { CardGrid } from "./MovieRow";
 import type { AppUser, PersonalMovie, TmdbResult } from "@/lib/types";
 
 interface DashboardProps {
@@ -72,11 +72,11 @@ export default function Dashboard({
   return (
     <>
     <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-4 pt-4 sm:px-6">
-      <h1 className="m-0 mb-1.5 font-display text-[clamp(26px,4vw,34px)] font-extrabold tracking-[-0.02em]">
+      <h1 className="m-0 mb-1.5 font-display text-[clamp(26px,4vw,38px)] font-semibold tracking-[-0.02em]">
         Hey {firstName} 👋
       </h1>
-      <p className="m-0 mb-6 text-[15px] text-dim">
-        Your personal watchlist. Everything here is pooled into the groups you belong to.
+      <p className="m-0 mb-8 text-[15.5px] text-dim">
+        Everything you add here lands in your groups&apos; shared lists.
       </p>
 
       <SearchBar
@@ -90,27 +90,18 @@ export default function Dashboard({
         }
       />
 
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-3.5">
-        <div className="flex items-center gap-2.5">
-          <h2 className="m-0 font-display text-[21px] font-bold">
-            {view === "watchlist" ? "My watchlist" : "Watched"}
-          </h2>
-          <Count>{active.length}</Count>
-        </div>
-        <Segmented
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-3 border-b border-line">
+        <Tabs
           value={view}
           onChange={setView}
           options={[
-            ["watchlist", "Watchlist"],
-            ["watched", "Watched"],
+            { key: "watchlist", label: "Watchlist", count: toWatch.length },
+            { key: "watched", label: "Watched", count: watched.length },
           ]}
         />
-      </div>
-      <div className="mb-[18px] flex flex-wrap items-center justify-between gap-3">
-        <p className="m-0 text-[13.5px] text-faint">
-          {view === "watchlist" ? "Movies you want to see." : "Movies you've already seen."}
-        </p>
-        <SortMenu value={sort} onChange={setSort} options={SORT_OPTIONS} />
+        <div className="pb-3">
+          <SortMenu value={sort} onChange={setSort} options={SORT_OPTIONS} />
+        </div>
       </div>
 
       {active.length > 0 ? (
@@ -149,29 +140,45 @@ export default function Dashboard({
   );
 }
 
-export function Segmented<T extends string>({
+export function Tabs<T extends string>({
   value,
   onChange,
   options,
 }: {
   value: T;
   onChange: (v: T) => void;
-  options: [T, string][];
+  options: { key: T; label: string; count?: number }[];
 }) {
   return (
-    <div className="flex gap-1 rounded-[13px] border border-border bg-chip p-[5px]">
-      {options.map(([k, label]) => (
-        <button
-          key={k}
-          onClick={() => onChange(k)}
-          className={
-            "rounded-[10px] px-[18px] py-2 text-[13.5px] font-bold transition-colors " +
-            (value === k ? "bg-accent2 text-white" : "bg-transparent text-dim hover:text-text")
-          }
-        >
-          {label}
-        </button>
-      ))}
+    <div className="flex gap-6 sm:gap-8">
+      {options.map((o) => {
+        const active = o.key === value;
+        return (
+          <button
+            key={o.key}
+            onClick={() => onChange(o.key)}
+            className={
+              "-mb-px flex items-center gap-2.5 pb-3.5 text-[16px] transition-colors " +
+              (active
+                ? "border-b-2 border-text font-semibold text-text"
+                : "border-b-2 border-transparent font-medium text-faint hover:text-text")
+            }
+          >
+            {o.label}
+            {o.count != null && (
+              <span
+                className={
+                  active
+                    ? "rounded-full bg-chip px-2.5 py-0.5 text-[12.5px] font-bold text-dim"
+                    : "text-[12.5px] font-bold text-muted2"
+                }
+              >
+                {o.count}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }

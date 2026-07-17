@@ -103,21 +103,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen">
       <header className="relative z-[5] mx-auto flex max-w-[1140px] items-center justify-between gap-5 px-5 py-5 sm:px-8">
-        <Link href="/" className="flex items-center gap-2.5">
-          <span
-            className="grid h-[30px] w-[30px] place-items-center rounded-[9px]"
-            style={{
-              background: "conic-gradient(from 210deg, var(--accent), var(--accent2))",
-              boxShadow: "0 6px 16px -4px var(--accent-glow)",
-            }}
-          >
-            <span
-              className="h-3.5 w-3.5 rounded-full"
-              style={{ background: "linear-gradient(90deg,#fff 50%, rgba(255,255,255,.25) 50%)" }}
-            />
-          </span>
-          <span className="font-display text-[18px] font-extrabold tracking-[-0.01em]">
-            Threeway Watchlist
+        <Link href="/" className="flex items-baseline gap-2.5">
+          <span className="font-display text-[22px] font-bold tracking-[-0.02em]">Threeway</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted2">
+            watchlist
           </span>
         </Link>
         <ThemeToggle />
@@ -202,8 +191,7 @@ export default function LoginPage() {
           <button
             onClick={submitEmail}
             disabled={busy}
-            className="w-full rounded-[14px] bg-accent py-[14px] text-[15px] font-extrabold text-[var(--accent-text)] transition-transform active:scale-[.98] disabled:opacity-55"
-            style={{ boxShadow: "0 12px 26px -10px var(--accent-glow)" }}
+            className="w-full rounded-[14px] bg-accent py-[14px] text-[15px] font-bold text-[var(--accent-text)] transition-transform active:scale-[.98] disabled:opacity-55"
           >
             {mode === "magic" ? "Send magic link" : isSignUp ? "Create account" : "Sign in"}
           </button>

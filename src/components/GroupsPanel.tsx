@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { initials, normalizeCode } from "@/lib/helpers";
+import { colorFor, initials, normalizeCode } from "@/lib/helpers";
 import { Count } from "./MovieRow";
 import { Footer } from "./Dashboard";
 import type { AppUser, Group } from "@/lib/types";
@@ -81,24 +81,23 @@ export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: Grou
     <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-4 pt-4 sm:px-6">
       <div className="mb-2 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="m-0 mb-1.5 font-display text-[clamp(26px,4vw,34px)] font-extrabold tracking-[-0.02em]">
-            Your groups 🍿
+          <h1 className="m-0 mb-1.5 font-display text-[clamp(26px,4vw,34px)] font-semibold tracking-[-0.02em]">
+            Your groups
           </h1>
           <p className="m-0 text-[15px] text-dim">
-            Your watchlist is pooled into every group you join.
+            Shared lists with your crew. Seen movies just quietly disappear.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={() => open("create")}
-            className="rounded-xl bg-accent px-5 py-3 text-[14.5px] font-extrabold text-[var(--accent-text)] transition-transform active:scale-95"
-            style={{ boxShadow: "0 12px 26px -12px var(--accent-glow)" }}
+            className="rounded-[11px] bg-accent px-5 py-3 text-[14px] font-semibold text-[var(--accent-text)] transition-transform active:scale-95"
           >
             + Create group
           </button>
           <button
             onClick={() => open("join")}
-            className="rounded-xl border border-border bg-chip px-5 py-3 text-[14.5px] font-bold text-text transition-colors hover:border-accent"
+            className="rounded-[11px] border border-border px-5 py-3 text-[14px] font-semibold text-text transition-colors hover:border-accent2"
           >
             Join with password
           </button>
@@ -179,36 +178,39 @@ export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: Grou
       </div>
 
       {myGroups.length > 0 ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-5">
           {myGroups.map((g) => (
             <button
               key={g.code}
               onClick={() => onEnter({ code: g.code, name: g.name })}
-              className="flex items-center justify-between rounded-[20px] border border-border bg-surface p-[18px] text-left transition-transform hover:-translate-y-1 hover:border-accent"
+              className="flex flex-col gap-5 rounded-[16px] border border-border bg-surface p-6 text-left transition-transform hover:-translate-y-1 hover:border-accent2"
               style={{ boxShadow: "var(--card-shadow)" }}
             >
-              <span className="flex min-w-0 items-center gap-3.5">
+              <span className="flex items-center justify-between">
                 <span
-                  className="grid h-[46px] w-[46px] flex-none place-items-center rounded-[14px] text-[15px] font-extrabold text-[var(--accent-text)]"
-                  style={{ background: "conic-gradient(from 210deg, var(--accent), var(--accent2))" }}
+                  className="grid h-[52px] w-[52px] flex-none place-items-center rounded-[14px] font-display text-[22px] font-bold text-white"
+                  style={{ background: colorFor(g.name || g.code) }}
                 >
                   {initials(g.name || g.code)}
                 </span>
-                <span className="min-w-0">
-                  <span className="flex items-center gap-2 text-[16px] font-bold">
-                    <span className="truncate">{g.name || g.code}</span>
-                    {g.isOwner && (
-                      <span className="flex-none rounded-full bg-accent px-2 py-0.5 text-[10px] font-extrabold tracking-[0.04em] text-[var(--accent-text)]">
-                        OWNER
-                      </span>
-                    )}
+                {g.isOwner ? (
+                  <span className="flex-none rounded-full bg-accent px-2.5 py-1 text-[11px] font-bold tracking-[0.08em] text-[var(--accent-text)]">
+                    OWNER
                   </span>
-                  <span className="mt-0.5 block text-[13px] text-dim">
-                    {g.memberCount ?? 0} {g.memberCount === 1 ? "member" : "members"}
+                ) : (
+                  <span className="flex-none rounded-full bg-chip px-2.5 py-1 text-[11px] font-bold tracking-[0.08em] text-faint">
+                    MEMBER
                   </span>
+                )}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-[19px] font-bold tracking-[-0.01em]">
+                  {g.name || g.code}
+                </span>
+                <span className="mt-1 block text-[13.5px] text-faint">
+                  {g.memberCount ?? 0} {g.memberCount === 1 ? "member" : "members"}
                 </span>
               </span>
-              <span className="flex-none text-[18px] text-faint">›</span>
             </button>
           ))}
         </div>

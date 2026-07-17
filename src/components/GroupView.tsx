@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import GroupMovieCard from "./GroupMovieCard";
-import { Count, CardGrid } from "./MovieRow";
-import { Segmented, Footer } from "./Dashboard";
+import { CardGrid } from "./MovieRow";
+import { Tabs, Footer } from "./Dashboard";
 import SortMenu from "./SortMenu";
 import { colorFor, initials } from "@/lib/helpers";
 import type { Group, GroupMovie, Member } from "@/lib/types";
@@ -96,14 +96,20 @@ export default function GroupView({
     <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-4 pt-4 sm:px-6">
       <button
         onClick={onBack}
-        className="mb-4 inline-flex items-center gap-1.5 text-[14px] font-semibold text-dim transition-colors hover:text-text"
+        className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-faint transition-colors hover:text-text"
       >
-        ‹ Groups
+        ‹ All groups
       </button>
 
       <div className="mb-1.5 flex flex-wrap items-start justify-between gap-5">
-        <div className="flex min-w-0 items-center gap-2">
-          <h1 className="m-0 font-display text-[clamp(24px,4vw,32px)] font-extrabold tracking-[-0.02em] [overflow-wrap:anywhere]">
+        <div className="flex min-w-0 items-center gap-4">
+          <span
+            className="grid h-[60px] w-[60px] flex-none place-items-center rounded-[16px] font-display text-[27px] font-bold text-white"
+            style={{ background: colorFor(group.name || group.code) }}
+          >
+            {initials(group.name || group.code)}
+          </span>
+          <h1 className="m-0 font-display text-[clamp(24px,4vw,34px)] font-semibold tracking-[-0.02em] [overflow-wrap:anywhere]">
             {group.name || group.code}
           </h1>
           <div className="relative" ref={menuRef}>
@@ -139,16 +145,15 @@ export default function GroupView({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {members.map((m) => {
-            const label = m.name || m.user_name;
-            return (
-              <span
-                key={m.user_id}
-                className="flex items-center gap-2 rounded-full border border-border bg-surface py-1.5 pl-1.5 pr-3.5 text-[13px] font-semibold"
-              >
+        <div className="flex items-center gap-3">
+          <div className="flex">
+            {members.slice(0, 5).map((m) => {
+              const label = m.name || m.user_name;
+              return (
                 <span
-                  className="grid h-[26px] w-[26px] flex-none place-items-center overflow-hidden rounded-full text-[10px] font-extrabold text-white"
+                  key={m.user_id}
+                  title={label || "…"}
+                  className="-ml-2 grid h-[30px] w-[30px] flex-none place-items-center overflow-hidden rounded-full border-2 border-frame text-[11px] font-bold text-white first:ml-0"
                   style={m.avatar_url ? undefined : { background: colorFor(label) }}
                 >
                   {m.avatar_url ? (
@@ -158,15 +163,20 @@ export default function GroupView({
                     initials(label)
                   )}
                 </span>
-                {label || "…"}
-              </span>
-            );
-          })}
+              );
+            })}
+          </div>
+          {members.length > 0 && (
+            <span className="text-[13.5px] font-medium text-faint">
+              {memberSummary(members)}
+            </span>
+          )}
         </div>
       </div>
 
-      <p className="mb-6 mt-0 text-[15px] text-dim">
-        Combined from everyone&apos;s watchlists — hiding anything a member has already seen.
+      <p className="mb-8 mt-4 max-w-[560px] text-[15px] leading-[1.55] text-dim">
+        Pulled from everyone&apos;s watchlists, minus anything a member&apos;s already seen.
+        Whatever&apos;s left is fair game for movie night.
       </p>
 
       {stale && (
@@ -181,33 +191,22 @@ export default function GroupView({
         </div>
       )}
 
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-3.5">
-        <div className="flex items-center gap-2.5">
-          <h2 className="m-0 font-display text-[21px] font-bold">
-            {view === "common" ? "Common watchlist" : "Already watched"}
-          </h2>
-          <Count>{active.length}</Count>
-        </div>
-        <Segmented
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-3 border-b border-line">
+        <Tabs
           value={view}
           onChange={setView}
           options={[
-            ["common", "Common"],
-            ["watched", "Watched"],
+            { key: "common", label: "Common", count: common.length },
+            { key: "watched", label: "Watched", count: watched.length },
           ]}
         />
-      </div>
-      <div className="mb-[18px] flex flex-wrap items-center justify-between gap-3">
-        <p className="m-0 text-[13.5px] text-faint">
-          {view === "common"
-            ? "On someone's list, and nobody in the group has watched yet."
-            : "Seen by someone in the group."}
-        </p>
-        {view === "common" ? (
-          <SortMenu value={commonSort} onChange={setCommonSort} options={COMMON_SORTS} />
-        ) : (
-          <SortMenu value={watchedSort} onChange={setWatchedSort} options={WATCHED_SORTS} />
-        )}
+        <div className="pb-3">
+          {view === "common" ? (
+            <SortMenu value={commonSort} onChange={setCommonSort} options={COMMON_SORTS} />
+          ) : (
+            <SortMenu value={watchedSort} onChange={setWatchedSort} options={WATCHED_SORTS} />
+          )}
+        </div>
       </div>
 
       {active.length > 0 ? (
@@ -237,6 +236,15 @@ export default function GroupView({
       <Footer />
     </>
   );
+}
+
+// "Ada", "Ada & Ravi", "Ada, Ravi & Jess", "Ada, Ravi, Jess +2"
+function memberSummary(members: Member[]): string {
+  const names = members.map((m) => (m.name || m.user_name || "…").split(/\s+/)[0]);
+  if (names.length <= 1) return names[0] || "";
+  if (names.length === 2) return `${names[0]} & ${names[1]}`;
+  if (names.length === 3) return `${names[0]}, ${names[1]} & ${names[2]}`;
+  return `${names[0]}, ${names[1]}, ${names[2]} +${names.length - 3}`;
 }
 
 function MenuItem({

@@ -46,7 +46,7 @@ export default function ThemeToggle() {
       localStorage.setItem("tw_theme", next);
     } catch {}
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", next === "dark" ? "#14101a" : "#f6f2ea");
+    if (meta) meta.setAttribute("content", next === "dark" ? "#131009" : "#d9d3c6");
   };
 
   return (
@@ -55,7 +55,7 @@ export default function ThemeToggle() {
       type="button"
       aria-label="Toggle dark mode"
       title="Toggle theme"
-      className="grid h-[38px] w-[38px] flex-none place-items-center rounded-xl border border-border bg-chip text-text transition-colors hover:border-accent active:scale-95"
+      className="grid h-[38px] w-[38px] flex-none place-items-center rounded-full border border-border text-dim transition-colors hover:text-text active:scale-95"
     >
       {theme === "dark" ? <SunIcon /> : <MoonIcon />}
     </button>

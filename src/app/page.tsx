@@ -14,7 +14,7 @@ export default function Landing() {
     <div className="min-h-screen">
       {/* header */}
       <header className="border-b border-line bg-bar">
-        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-5 py-4 sm:px-8">
+        <div className="mx-auto flex max-w-[1720px] items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <div className="flex items-baseline gap-2.5">
             <span className="font-display text-[22px] font-bold tracking-[-0.02em]">Threeway</span>
             <span className="hidden text-[11px] font-semibold uppercase tracking-[0.22em] text-muted2 sm:inline">
@@ -34,7 +34,7 @@ export default function Landing() {
       </header>
 
       {/* hero */}
-      <div className="mx-auto max-w-[1180px] px-5 sm:px-8">
+      <div className="mx-auto max-w-[1720px] px-5 sm:px-8">
         <div className="view-anim grid items-center gap-10 py-14 sm:py-24 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
           <div>
             <div className="mb-6 inline-block rounded-full border border-border px-[15px] py-[7px] text-[12.5px] font-semibold text-faint">
@@ -95,7 +95,7 @@ export default function Landing() {
 
       {/* footer bar */}
       <footer className="border-t border-line bg-bar">
-        <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-2 px-5 py-6 sm:px-8">
+        <div className="mx-auto flex max-w-[1720px] flex-wrap items-center justify-between gap-2 px-5 py-6 sm:px-8">
           <span className="text-[13px] text-faint">© 2026 Threeway Watchlist</span>
           <span className="text-[13px] text-faint">
             Movie data &amp; posters from{" "}

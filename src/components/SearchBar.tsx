@@ -69,8 +69,14 @@ export default function SearchBar({
     }, 300);
   }
 
+  const open = results.length > 0 || !!error;
+
   return (
-    <div className="relative mb-7" ref={wrapRef}>
+    <div
+      ref={wrapRef}
+      className="relative transition-[margin] duration-200"
+      style={{ marginBottom: open ? 332 : 28 }}
+    >
       <svg
         className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint"
         width="18"
@@ -90,9 +96,9 @@ export default function SearchBar({
         className="w-full rounded-[14px] border border-border bg-surface py-3.5 pl-[46px] pr-4 text-[15px] text-text outline-none transition-colors focus:border-accent"
       />
 
-      {(results.length > 0 || error) && (
+      {open && (
         <ul
-          className="absolute left-0 right-0 z-[15] mt-2 rounded-[var(--radius-sm)] border border-border bg-surface p-1.5"
+          className="absolute left-0 right-0 z-[15] mt-2 max-h-[316px] overflow-y-auto rounded-[var(--radius-sm)] border border-border bg-surface p-1.5"
           style={{ boxShadow: "var(--card-shadow-hover)" }}
         >
           {error ? (

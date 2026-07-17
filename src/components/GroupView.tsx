@@ -93,7 +93,7 @@ export default function GroupView({
 
   return (
     <>
-    <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-4 pt-4 sm:px-6">
+    <main className="view-anim relative z-[2] mx-auto max-w-[1720px] px-4 pt-4 sm:px-8 lg:px-12">
       <button
         onClick={onBack}
         className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-faint transition-colors hover:text-text"

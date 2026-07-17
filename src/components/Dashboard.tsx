@@ -71,7 +71,7 @@ export default function Dashboard({
 
   return (
     <>
-    <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-4 pt-4 sm:px-6">
+    <main className="view-anim relative z-[2] mx-auto max-w-[1720px] px-4 pt-4 sm:px-8 lg:px-12">
       <h1 className="m-0 mb-1.5 font-display text-[clamp(26px,4vw,38px)] font-semibold tracking-[-0.02em]">
         Hey {firstName} 👋
       </h1>
@@ -79,7 +79,7 @@ export default function Dashboard({
         Everything you add here lands in your groups&apos; shared lists.
       </p>
 
-      <div className="max-w-[640px]">
+      <div className="max-w-[440px]">
         <SearchBar
           watchlistIds={watchlistIds}
           watchedIds={watchedIds}

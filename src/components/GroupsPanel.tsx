@@ -78,7 +78,7 @@ export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: Grou
 
   return (
     <>
-    <main className="view-anim relative z-[2] mx-auto max-w-[1000px] px-4 pt-4 sm:px-6">
+    <main className="view-anim relative z-[2] mx-auto max-w-[1720px] px-4 pt-4 sm:px-8 lg:px-12">
       <div className="mb-2 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="m-0 mb-1.5 font-display text-[clamp(26px,4vw,34px)] font-semibold tracking-[-0.02em]">

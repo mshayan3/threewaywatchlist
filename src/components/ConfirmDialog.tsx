@@ -96,7 +96,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                   "rounded-[12px] px-4 py-2.5 text-[13px] font-bold transition-transform active:scale-95 " +
                   (opts.danger
                     ? "bg-[var(--bad)] text-white"
-                    : "bg-accent text-[var(--accent-text)]")
+                    : "bg-accent text-accent-text")
                 }
               >
                 {opts.confirmLabel || "Confirm"}

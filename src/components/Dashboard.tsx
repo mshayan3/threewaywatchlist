@@ -12,7 +12,6 @@ interface DashboardProps {
   watchlist: PersonalMovie[];
   watchedList: PersonalMovie[];
   onAdd: (r: TmdbResult) => void;
-  onAddToWatched: (r: TmdbResult) => void;
   onMarkWatched: (m: PersonalMovie) => void;
   onSetVerdict: (m: PersonalMovie, v: Verdict | null) => void;
   onRemoveFromWatchlist: (m: PersonalMovie) => void;
@@ -43,7 +42,6 @@ export default function Dashboard({
   watchlist,
   watchedList,
   onAdd,
-  onAddToWatched,
   onMarkWatched,
   onSetVerdict,
   onRemoveFromWatchlist,
@@ -55,8 +53,6 @@ export default function Dashboard({
   const cmp = SORTERS[sort];
   const toWatch = useMemo(() => [...watchlist].sort(cmp), [watchlist, cmp]);
   const watched = useMemo(() => [...watchedList].sort(cmp), [watchedList, cmp]);
-  // Search "Add" files into whichever list is open (watchlist vs watched).
-  const handleAdd = view === "watched" ? onAddToWatched : onAdd;
   const watchlistIds = useMemo(
     () => new Set(watchlist.map((m) => String(m.tmdbId))),
     [watchlist]
@@ -82,12 +78,8 @@ export default function Dashboard({
         <SearchBar
           watchlistIds={watchlistIds}
           watchedIds={watchedIds}
-          onAdd={handleAdd}
-          placeholder={
-            view === "watched"
-              ? "Add a movie to your watched list…"
-              : "Add a movie to your watchlist…"
-          }
+          onAdd={onAdd}
+          placeholder="Add a movie to your watchlist…"
         />
       </div>
 

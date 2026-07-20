@@ -2,7 +2,6 @@
 
 import { posterGradient } from "@/lib/helpers";
 import { useConfirm } from "@/components/ConfirmDialog";
-import WatchCountBadge from "@/components/WatchCountBadge";
 import type { PersonalMovie, Verdict } from "@/lib/types";
 
 // Theme-independent verdict colors (from the design tokens).
@@ -111,7 +110,6 @@ export default function PersonalMovieCard({
           </div>
         )}
 
-        <WatchCountBadge count={movie.watchCount} />
         <button
           onClick={handleRemove}
           title="Remove"

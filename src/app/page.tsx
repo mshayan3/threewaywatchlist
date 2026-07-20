@@ -28,7 +28,7 @@ export default function Landing() {
             <ThemeToggle />
             <Link
               href="/login"
-              className="rounded-full bg-accent px-[22px] py-2.5 text-[14px] font-semibold text-[var(--accent-text)] transition-transform active:scale-95"
+              className="rounded-full bg-accent px-[22px] py-2.5 text-[14px] font-semibold text-accent-text transition-transform active:scale-95"
             >
               Sign in
             </Link>
@@ -52,7 +52,7 @@ export default function Landing() {
             <div className="flex flex-wrap items-center gap-3.5">
               <Link
                 href="/login"
-                className="rounded-[12px] bg-accent px-[30px] py-[15px] text-[15px] font-semibold text-[var(--accent-text)] transition-transform active:scale-[.98]"
+                className="rounded-[12px] bg-accent px-[30px] py-[15px] text-[15px] font-semibold text-accent-text transition-transform active:scale-[.98]"
               >
                 Get started
               </Link>

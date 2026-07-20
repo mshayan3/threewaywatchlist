@@ -228,7 +228,7 @@ export default function ProfilePage() {
           <button
             disabled={busy}
             onClick={save}
-            className="w-full rounded-[14px] bg-accent py-3 text-[15px] font-extrabold text-[var(--accent-text)] transition-transform active:scale-95 disabled:opacity-55"
+            className="w-full rounded-[14px] bg-accent py-3 text-[15px] font-extrabold text-accent-text transition-transform active:scale-95 disabled:opacity-55"
           >
             {busy ? "Saving…" : "Save profile"}
           </button>

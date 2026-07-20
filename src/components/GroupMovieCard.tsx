@@ -89,7 +89,9 @@ export default function GroupMovieCard({
             {movie.title}
           </span>
         )}
-        <OverlayAvatars people={people} />
+        {/* On the Common tab the poster stays clean — on-list state is shown by
+            the button below. Watched keeps the who-saw-it avatars. */}
+        {variant === "watched" && <OverlayAvatars people={people} />}
         <WatchCountBadge count={watchCount} />
 
         {movie.rating > 0 && (

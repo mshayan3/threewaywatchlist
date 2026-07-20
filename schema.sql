@@ -26,19 +26,33 @@ create extension if not exists pgcrypto;
 drop function if exists public.remove_movie(text, bigint);
 drop function if exists public.my_groups();
 drop function if exists public.group_movies(text);
+-- v6: create_group lost its password arg; join_group (password) is retired.
+drop function if exists public.create_group(text, text, text, text);
+drop function if exists public.join_group(text, text, text);
 -- One-time removal of the legacy group-scoped `movies` table (never recreated,
 -- holds no current data). The user-scoped `public.watched` is intentionally
 -- NOT dropped so re-running this file keeps everyone's watched history.
 drop table if exists public.movies cascade;
 
--- --- group tables (unchanged) ----------------------------------------------
+-- --- group tables ----------------------------------------------------------
+-- v6: groups are joined via a shareable invite link, not a password. New
+-- installs get a nullable password_hash (legacy/unused) + an invite_token.
 create table if not exists public.groups (
   code          text primary key,
   name          text not null,
-  password_hash text not null,
+  password_hash text,
+  invite_token  text,
   created_by    uuid references auth.users(id),
   created_at    timestamptz default now()
 );
+
+-- Migrate existing installs to the invite-link model.
+alter table public.groups alter column password_hash drop not null;
+alter table public.groups add column if not exists invite_token text;
+update public.groups
+   set invite_token = code || '-' || substr(md5(random()::text), 1, 6)
+ where invite_token is null;
+create unique index if not exists groups_invite_token_idx on public.groups(invite_token);
 
 create table if not exists public.group_members (
   group_code text references public.groups(code) on delete cascade,
@@ -136,56 +150,59 @@ create policy "own watched" on public.watched
   for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
--- hide the password hash from clients entirely
+-- hide the password hash from clients entirely; invite_token is readable, but
+-- RLS still limits which group rows a user can select (members only).
 revoke select on public.groups from authenticated;
-grant  select (code, name, created_by, created_at) on public.groups to authenticated;
+grant  select (code, name, created_by, created_at, invite_token) on public.groups to authenticated;
 
 -- --------------------------------------------------------------------------
 --  RPCs: create / join / list / leave / delete groups
 -- --------------------------------------------------------------------------
+-- v6: create a group without a password; returns the new group's invite token.
 create or replace function public.create_group(
-  p_code text, p_name text, p_password text, p_user_name text)
+  p_code text, p_name text, p_user_name text)
 returns text language plpgsql security definer
 set search_path = public, extensions as $$
+declare tok text;
 begin
-  if length(coalesce(p_code,'')) = 0 or length(coalesce(p_password,'')) = 0 then
-    return 'invalid';
-  end if;
+  if length(coalesce(p_code,'')) = 0 then return 'invalid'; end if;
   if exists (select 1 from public.groups where code = p_code) then
     return 'exists';
   end if;
-  insert into public.groups(code, name, password_hash, created_by)
-    values (p_code, p_name, crypt(p_password, gen_salt('bf')), auth.uid());
+  tok := p_code || '-' || substr(md5(random()::text), 1, 6);
+  insert into public.groups(code, name, invite_token, created_by)
+    values (p_code, p_name, tok, auth.uid());
   insert into public.group_members(group_code, user_id, user_name)
     values (p_code, auth.uid(), p_user_name);
-  return 'ok';
+  return tok;
 end; $$;
 
-create or replace function public.join_group(
-  p_code text, p_password text, p_user_name text)
+-- v6: join a group via its invite token; returns the group code (or 'nogroup').
+create or replace function public.join_by_token(
+  p_token text, p_user_name text)
 returns text language plpgsql security definer
 set search_path = public, extensions as $$
-declare gh text;
+declare gcode text;
 begin
-  select password_hash into gh from public.groups where code = p_code;
-  if gh is null then return 'nogroup'; end if;
-  if gh <> crypt(p_password, gh) then return 'badpw'; end if;
+  select code into gcode from public.groups where invite_token = p_token;
+  if gcode is null then return 'nogroup'; end if;
   insert into public.group_members(group_code, user_id, user_name)
-    values (p_code, auth.uid(), p_user_name)
+    values (gcode, auth.uid(), p_user_name)
     on conflict (group_code, user_id) do update set user_name = excluded.user_name;
-  return 'ok';
+  return gcode;
 end; $$;
 
--- Groups the caller belongs to, with owner flag + member count for the dashboard.
+-- Groups the caller belongs to: owner flag, member count, and invite token.
 create or replace function public.my_groups()
-returns table(code text, name text, is_owner boolean, member_count bigint)
+returns table(code text, name text, is_owner boolean, member_count bigint, invite_token text)
 language sql security definer stable
 set search_path = public as $$
   select g.code,
          g.name,
          g.created_by = auth.uid()                       as is_owner,
          (select count(*) from public.group_members gm
-           where gm.group_code = g.code)                 as member_count
+           where gm.group_code = g.code)                 as member_count,
+         g.invite_token
   from public.groups g
   join public.group_members m on m.group_code = g.code
   where m.user_id = auth.uid()
@@ -271,8 +288,8 @@ set search_path = public as $$
   group by e.tmdb_id;
 $$;
 
-grant execute on function public.create_group(text,text,text,text) to authenticated;
-grant execute on function public.join_group(text,text,text)        to authenticated;
+grant execute on function public.create_group(text,text,text)      to authenticated;
+grant execute on function public.join_by_token(text,text)          to authenticated;
 grant execute on function public.my_groups()                       to authenticated;
 grant execute on function public.leave_group(text)                 to authenticated;
 grant execute on function public.delete_group(text)                to authenticated;

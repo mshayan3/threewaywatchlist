@@ -142,7 +142,7 @@ export default function SearchBar({
                       "flex-none rounded-lg px-3.5 py-2 text-[.84rem] font-bold transition-colors " +
                       (already
                         ? "cursor-default bg-chip text-faint"
-                        : "bg-accent text-[var(--accent-text)] active:scale-95")
+                        : "bg-accent text-accent-text active:scale-95")
                     }
                   >
                     {label}

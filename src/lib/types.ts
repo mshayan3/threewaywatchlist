@@ -15,6 +15,7 @@ export interface Group {
   name?: string;
   isOwner?: boolean;
   memberCount?: number;
+  inviteToken?: string; // shareable invite-link token (owners can copy it)
 }
 
 export interface Member {

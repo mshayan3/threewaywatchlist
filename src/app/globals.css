@@ -93,6 +93,7 @@
   --color-faint: var(--text-faint);
   --color-muted2: var(--muted2);
   --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
   --color-accent2: var(--accent2);
   --color-amber: var(--amber);
   --color-good: var(--good);
@@ -141,12 +142,18 @@ body {
   transition: background 0.4s, color 0.4s;
 }
 
-a { color: inherit; text-decoration: none; }
-a:hover { opacity: 0.85; }
-::placeholder { color: currentColor; opacity: 0.5; }
-::selection { background: var(--chip-bg); }
-:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
-button { -webkit-tap-highlight-color: transparent; font-family: inherit; }
+/* Base element resets live in @layer base so Tailwind's utilities (a later
+   layer) still win. Unlayered rules override every layered utility, so an
+   unlayered `a { color: inherit }` would silently defeat text-color classes on
+   every link (e.g. filled button labels rendering as inherited body text). */
+@layer base {
+  a { color: inherit; text-decoration: none; }
+  a:hover { opacity: 0.85; }
+  ::placeholder { color: currentColor; opacity: 0.5; }
+  ::selection { background: var(--chip-bg); }
+  :focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+  button { -webkit-tap-highlight-color: transparent; font-family: inherit; }
+}
 
 /* view entrance animation */
 @keyframes fadeUp  { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }

@@ -17,16 +17,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
+  // Where to land after auth — carries an invite link (/join/<token>) through
+  // sign-in so a shared link still works for signed-out visitors.
+  const [next, setNext] = useState("/dashboard");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("error")) {
       setMsg({ text: "That sign-in link didn't work. Please try again.", kind: "err" });
     }
+    const n = params.get("next");
+    // Only allow same-app relative paths (no protocol-relative "//" open redirect).
+    if (n && n.startsWith("/") && !n.startsWith("//")) setNext(n);
   }, []);
 
   const callbackUrl = () =>
-    typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined;
+    typeof window !== "undefined"
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+      : undefined;
 
   async function oauth(provider: "google" | "apple") {
     setBusy(true);
@@ -74,7 +82,7 @@ export default function LoginPage() {
       if (!data.session) {
         return setMsg({ text: "Check your email to confirm your account.", kind: "ok" });
       }
-      router.push("/dashboard");
+      router.push(next);
       return;
     }
 
@@ -191,7 +199,7 @@ export default function LoginPage() {
           <button
             onClick={submitEmail}
             disabled={busy}
-            className="w-full rounded-[14px] bg-accent py-[14px] text-[15px] font-bold text-[var(--accent-text)] transition-transform active:scale-[.98] disabled:opacity-55"
+            className="w-full rounded-[14px] bg-accent py-[14px] text-[15px] font-bold text-accent-text transition-transform active:scale-[.98] disabled:opacity-55"
           >
             {mode === "magic" ? "Send magic link" : isSignUp ? "Create account" : "Sign in"}
           </button>

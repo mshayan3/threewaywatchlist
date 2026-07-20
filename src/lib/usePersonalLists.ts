@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { parseYear } from "@/lib/helpers";
 import { fetchMovieMeta } from "@/lib/tmdb";
 import { useToast } from "@/components/Toast";
-import type { AppUser, PersonalMovie, TmdbResult, WatchedRow, WatchlistRow } from "@/lib/types";
+import type { AppUser, PersonalMovie, TmdbResult, Verdict, WatchedRow, WatchlistRow } from "@/lib/types";
 
 // Owns the signed-in user's personal watchlist + watched list: initial load,
 // realtime sync on their own rows, and all mutations. Shared by the dashboard
@@ -90,6 +90,8 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
       genre: r.genre || "",
       at,
       watchCount: counts.get(r.tmdb_id) ?? 0,
+      // Only watched rows carry a verdict; absent until the DB column exists.
+      verdict: (r as WatchedRow).verdict ?? null,
     });
     const wlMapped = ((wlRes.data as WatchlistRow[]) || []).map((r) => map(r, r.added_at));
     const wdMapped = ((wdRes.data as WatchedRow[]) || []).map((r) => map(r, r.watched_at));
@@ -263,6 +265,27 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
     [user, toast, after]
   );
 
+  // Set (or clear, with null) the caller's personal good/ok/bad verdict on a
+  // watched movie. RLS lets a user update their own watched row directly.
+  const setVerdict = useCallback(
+    async (m: PersonalMovie, verdict: Verdict | null) => {
+      if (!user) return;
+      // Optimistic: reflect the choice immediately, before the round-trip.
+      setWatchedList((list) =>
+        list.map((x) => (x.tmdbId === m.tmdbId ? { ...x, verdict } : x))
+      );
+      const { error } = await supabase
+        .from("watched")
+        .update({ verdict })
+        .match({ user_id: user.id, tmdb_id: m.tmdbId });
+      if (error) {
+        toast("Couldn't save your rating: " + error.message);
+        after(); // resync from the server on failure
+      }
+    },
+    [user, toast, after]
+  );
+
   const watchlistIds = useMemo(() => new Set(watchlist.map((m) => m.tmdbId)), [watchlist]);
   const watchedIds = useMemo(() => new Set(watchedList.map((m) => m.tmdbId)), [watchedList]);
 
@@ -279,5 +302,6 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
     moveToWatchlist,
     removeFromWatchlist,
     removeFromWatched,
+    setVerdict,
   };
 }

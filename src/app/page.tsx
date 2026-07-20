@@ -11,10 +11,13 @@ const HERO = [
 // Public landing page. Auth-gated routes live under /dashboard and /groups.
 export default function Landing() {
   return (
-    <div className="min-h-screen">
-      {/* header */}
-      <header className="border-b border-line bg-bar">
-        <div className="mx-auto flex max-w-[1720px] items-center justify-between gap-4 px-5 py-4 sm:px-8">
+    <div className="min-h-screen w-full px-0 py-0 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
+      <div
+        className="mx-auto w-full max-w-[1440px] overflow-hidden border-y border-border bg-frame sm:rounded-[20px] sm:border"
+        style={{ boxShadow: "var(--card-shadow-hover)" }}
+      >
+        {/* signed-out top bar */}
+        <header className="flex items-center justify-between gap-4 border-b border-line bg-bar px-5 py-5 sm:px-10">
           <div className="flex items-baseline gap-2.5">
             <span className="font-display text-[22px] font-bold tracking-[-0.02em]">Threeway</span>
             <span className="hidden text-[11px] font-semibold uppercase tracking-[0.22em] text-muted2 sm:inline">
@@ -25,19 +28,17 @@ export default function Landing() {
             <ThemeToggle />
             <Link
               href="/login"
-              className="rounded-full bg-accent px-5 py-2.5 text-[14px] font-semibold text-[var(--accent-text)] transition-transform active:scale-95"
+              className="rounded-full bg-accent px-[22px] py-2.5 text-[14px] font-semibold text-[var(--accent-text)] transition-transform active:scale-95"
             >
               Sign in
             </Link>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* hero */}
-      <div className="mx-auto max-w-[1720px] px-5 sm:px-8">
-        <div className="view-anim grid items-center gap-10 py-14 sm:py-24 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
+        {/* hero */}
+        <div className="view-anim grid items-center gap-10 px-6 py-14 sm:px-10 sm:py-20 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14 lg:px-16 lg:pb-[76px] lg:pt-[84px]">
           <div>
-            <div className="mb-6 inline-block rounded-full border border-border px-[15px] py-[7px] text-[12.5px] font-semibold text-faint">
+            <div className="mb-7 inline-block rounded-full border border-border px-[15px] py-[7px] text-[12.5px] font-semibold text-faint">
               No more &ldquo;wait — have you seen it?&rdquo;
             </div>
             <h1 className="m-0 mb-6 font-display text-[clamp(38px,5.4vw,60px)] font-semibold leading-[1.02] tracking-[-0.025em]">
@@ -91,20 +92,23 @@ export default function Landing() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* footer bar */}
-      <footer className="border-t border-line bg-bar">
-        <div className="mx-auto flex max-w-[1720px] flex-wrap items-center justify-between gap-2 px-5 py-6 sm:px-8">
+        {/* footer bar */}
+        <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-bar px-6 py-6 sm:px-10">
           <span className="text-[13px] text-faint">© 2026 Threeway Watchlist</span>
           <span className="text-[13px] text-faint">
             Movie data &amp; posters from{" "}
-            <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://www.themoviedb.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-accent2 hover:opacity-80"
+            >
               TMDB
             </a>
           </span>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }

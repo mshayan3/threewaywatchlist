@@ -6,9 +6,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuthUser } from "@/lib/useAuthUser";
 import { useToast } from "@/components/Toast";
 import { initials } from "@/lib/helpers";
-import TopBar from "@/components/TopBar";
+import AppShell from "@/components/AppShell";
 import Spinner from "@/components/Spinner";
-import { Footer } from "@/components/Dashboard";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -130,10 +129,9 @@ export default function ProfilePage() {
 
   if (loading || !user || !ready) {
     return (
-      <>
-        <TopBar user={user} onSignOut={signOut} />
+      <AppShell user={user} onSignOut={signOut}>
         <Spinner />
-      </>
+      </AppShell>
     );
   }
 
@@ -142,9 +140,8 @@ export default function ProfilePage() {
     "w-full rounded-[14px] border border-border bg-input px-[15px] py-3 text-[14.5px] text-text outline-none transition-colors focus:border-accent";
 
   return (
-    <>
-      <TopBar user={user} onSignOut={signOut} />
-      <main className="view-anim relative z-[2] mx-auto max-w-[560px] px-4 pt-4 sm:px-6">
+    <AppShell user={user} onSignOut={signOut}>
+      <main className="view-anim mx-auto max-w-[560px]">
         <h1 className="m-0 mb-1.5 font-display text-[clamp(24px,4vw,32px)] font-extrabold tracking-[-0.02em]">
           Your profile
         </h1>
@@ -237,7 +234,6 @@ export default function ProfilePage() {
           </button>
         </div>
       </main>
-      <Footer />
-    </>
+    </AppShell>
   );
 }

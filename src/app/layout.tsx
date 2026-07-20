@@ -51,7 +51,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <div className="relative z-[1] min-h-screen pb-20">
+        <div className="relative z-[1] min-h-screen">
           <ToastProvider>
             <ConfirmProvider>{children}</ConfirmProvider>
           </ToastProvider>

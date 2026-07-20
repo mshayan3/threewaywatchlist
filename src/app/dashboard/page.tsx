@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuthUser } from "@/lib/useAuthUser";
 import { usePersonalLists } from "@/lib/usePersonalLists";
-import TopBar from "@/components/TopBar";
+import AppShell from "@/components/AppShell";
 import Dashboard from "@/components/Dashboard";
 import Spinner from "@/components/Spinner";
 
@@ -26,16 +26,14 @@ export default function DashboardPage() {
 
   if (loading || !user) {
     return (
-      <>
-        <TopBar user={null} onSignOut={signOut} />
+      <AppShell user={null} onSignOut={signOut}>
         <Spinner />
-      </>
+      </AppShell>
     );
   }
 
   return (
-    <>
-      <TopBar user={user} onSignOut={signOut} />
+    <AppShell user={user} onSignOut={signOut}>
       <Dashboard
         user={user}
         watchlist={personal.watchlist}
@@ -43,10 +41,10 @@ export default function DashboardPage() {
         onAdd={personal.add}
         onAddToWatched={personal.addToWatched}
         onMarkWatched={personal.markWatched}
-        onMoveToWatchlist={personal.moveToWatchlist}
+        onSetVerdict={personal.setVerdict}
         onRemoveFromWatchlist={personal.removeFromWatchlist}
         onRemoveFromWatched={personal.removeFromWatched}
       />
-    </>
+    </AppShell>
   );
 }

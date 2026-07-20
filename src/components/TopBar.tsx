@@ -49,11 +49,8 @@ export default function TopBar({ user, onSignOut }: TopBarProps) {
       : "bg-transparent text-faint hover:text-text");
 
   return (
-    <header
-      className="sticky top-0 z-[20] border-b border-line backdrop-blur-md"
-      style={{ background: "var(--glass)" }}
-    >
-      <div className="mx-auto flex max-w-[1720px] items-center justify-between gap-3 px-4 py-3.5 sm:gap-4 sm:px-8 sm:py-4 lg:px-12">
+    <header className="border-b border-line bg-bar">
+      <div className="flex items-center justify-between gap-3 px-5 py-3.5 sm:gap-4 sm:px-10 sm:py-[18px]">
         <Logo />
 
         {user && (

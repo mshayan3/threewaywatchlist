@@ -72,7 +72,7 @@ export default function SearchBar({
   const open = results.length > 0 || !!error;
 
   return (
-    <div ref={wrapRef} className="relative mb-[320px]">
+    <div ref={wrapRef} className="relative">
       <svg
         className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-faint"
         width="18"
@@ -89,7 +89,7 @@ export default function SearchBar({
         autoComplete="off"
         value={query}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-[14px] border border-border bg-surface py-3.5 pl-[46px] pr-4 text-[15px] text-text outline-none transition-colors focus:border-accent"
+        className="w-full rounded-[13px] border border-border bg-surface2 py-[15px] pl-[46px] pr-4 text-[15px] text-text outline-none transition-colors focus:border-accent"
       />
 
       {open && (

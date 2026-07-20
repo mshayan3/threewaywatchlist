@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuthUser } from "@/lib/useAuthUser";
 import { useMyGroups } from "@/lib/useMyGroups";
-import TopBar from "@/components/TopBar";
+import AppShell from "@/components/AppShell";
 import GroupsPanel from "@/components/GroupsPanel";
 import Spinner from "@/components/Spinner";
 import type { Group } from "@/lib/types";
@@ -26,22 +26,20 @@ export default function GroupsPage() {
 
   if (loading || !user) {
     return (
-      <>
-        <TopBar user={null} onSignOut={signOut} />
+      <AppShell user={null} onSignOut={signOut}>
         <Spinner />
-      </>
+      </AppShell>
     );
   }
 
   return (
-    <>
-      <TopBar user={user} onSignOut={signOut} />
+    <AppShell user={user} onSignOut={signOut}>
       <GroupsPanel
         user={user}
         myGroups={myGroups}
         onEnter={(g: Group) => router.push(`/groups/${encodeURIComponent(g.code)}`)}
         onChanged={reload}
       />
-    </>
+    </AppShell>
   );
 }

@@ -36,6 +36,10 @@ export interface WatchlistRow {
   added_at: string;
 }
 
+// The user's personal take on a movie they've watched, distinct from the TMDB
+// numeric rating. null = not yet rated.
+export type Verdict = "good" | "ok" | "bad";
+
 export interface WatchedRow {
   user_id: string;
   tmdb_id: number;
@@ -44,6 +48,7 @@ export interface WatchedRow {
   poster: string | null;
   rating: number | null;
   genre: string | null;
+  verdict: Verdict | null;
   watched_at: string;
 }
 
@@ -57,6 +62,7 @@ export interface PersonalMovie {
   genre: string;
   at: string; // added_at or watched_at
   watchCount: number; // times this user has watched it (0 = never)
+  verdict?: Verdict | null; // personal good/ok/bad take (watched list only)
 }
 
 // A person referenced in a group movie's queued_by / watched_by lists.

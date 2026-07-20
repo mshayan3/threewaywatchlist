@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import GroupMovieCard from "./GroupMovieCard";
-import { Gallery } from "./MovieRow";
-import { Tabs, Footer } from "./Dashboard";
+import { MovieGrid } from "./MovieRow";
+import { Tabs } from "./Dashboard";
 import SortMenu from "./SortMenu";
 import { colorFor, initials } from "@/lib/helpers";
 import type { Group, GroupMovie, Member } from "@/lib/types";
@@ -103,8 +103,7 @@ export default function GroupView({
   }, [members, myUserId]);
 
   return (
-    <>
-    <main className="view-anim relative z-[2] mx-auto max-w-[1720px] px-4 pt-4 sm:px-8 lg:px-12">
+    <div className="view-anim">
       <button
         onClick={onBack}
         className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-faint transition-colors hover:text-text"
@@ -221,7 +220,7 @@ export default function GroupView({
       </div>
 
       {active.length > 0 ? (
-        <Gallery>
+        <MovieGrid>
           {active.map((m) => (
             <GroupMovieCard
               key={m.tmdbId}
@@ -234,7 +233,7 @@ export default function GroupView({
               onRemoveFromMine={onRemoveFromMine}
             />
           ))}
-        </Gallery>
+        </MovieGrid>
       ) : (
         <p className="rounded-[var(--radius)] border border-dashed border-border px-4 py-10 text-center text-[.95rem] text-faint">
           {view === "common"
@@ -242,10 +241,7 @@ export default function GroupView({
             : "No movies have been watched by anyone in the group yet."}
         </p>
       )}
-
-    </main>
-      <Footer />
-    </>
+    </div>
   );
 }
 

@@ -3,14 +3,54 @@
 import { posterGradient } from "@/lib/helpers";
 import { useConfirm } from "@/components/ConfirmDialog";
 import WatchCountBadge from "@/components/WatchCountBadge";
-import type { PersonalMovie } from "@/lib/types";
+import type { PersonalMovie, Verdict } from "@/lib/types";
+
+// Theme-independent verdict colors (from the design tokens).
+const VERDICTS: { key: Verdict; label: string; color: string; tint: string }[] = [
+  { key: "good", label: "Good", color: "#6e9166", tint: "rgba(110,145,102,.16)" },
+  { key: "ok", label: "Okay", color: "#c08a3e", tint: "rgba(192,138,62,.16)" },
+  { key: "bad", label: "Bad", color: "#c06148", tint: "rgba(192,97,72,.16)" },
+];
+
+function VerdictSelector({
+  value,
+  onChange,
+}: {
+  value: Verdict | null | undefined;
+  onChange: (v: Verdict | null) => void;
+}) {
+  return (
+    <div className="mt-3 flex gap-[5px]" role="group" aria-label="Your take">
+      {VERDICTS.map((v) => {
+        const active = value === v.key;
+        return (
+          <button
+            key={v.key}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(active ? null : v.key)}
+            className="flex-1 rounded-[8px] border py-[7px] text-center text-[12.5px] font-bold transition-colors"
+            style={
+              active
+                ? { background: v.tint, color: v.color, borderColor: v.color }
+                : { background: "transparent", color: "var(--muted2)", borderColor: "var(--border)" }
+            }
+          >
+            {v.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 interface PersonalMovieCardProps {
   movie: PersonalMovie;
-  // "watchlist" shows Mark-watched; "watched" shows Move-back. Both show Remove.
+  // "watchlist" shows Mark-watched; "watched" shows the good/ok/bad selector.
+  // Both show Remove.
   variant: "watchlist" | "watched";
   onMarkWatched?: (m: PersonalMovie) => void;
-  onMoveToWatchlist?: (m: PersonalMovie) => void;
+  onSetVerdict?: (m: PersonalMovie, v: Verdict | null) => void;
   onRemove: (m: PersonalMovie) => void;
 }
 
@@ -18,7 +58,7 @@ export default function PersonalMovieCard({
   movie,
   variant,
   onMarkWatched,
-  onMoveToWatchlist,
+  onSetVerdict,
   onRemove,
 }: PersonalMovieCardProps) {
   const confirmDialog = useConfirm();
@@ -42,7 +82,7 @@ export default function PersonalMovieCard({
   return (
     <li className="group relative">
       <div
-        className="relative aspect-[3/4] overflow-hidden rounded-[13px] border border-line"
+        className="relative aspect-[2/3] overflow-hidden rounded-[13px] border border-line"
         style={{
           boxShadow: "var(--card-shadow)",
           ...(hasPoster ? {} : { background: posterGradient(movie.tmdbId) }),
@@ -100,12 +140,10 @@ export default function PersonalMovieCard({
             Mark watched
           </button>
         ) : (
-          <button
-            onClick={() => onMoveToWatchlist?.(movie)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-[9px] border border-border py-2.5 text-[13.5px] font-semibold text-dim transition-colors hover:border-accent2 hover:text-text"
-          >
-            ↺ Move to watchlist
-          </button>
+          <VerdictSelector
+            value={movie.verdict}
+            onChange={(v) => onSetVerdict?.(movie, v)}
+          />
         )}
       </div>
     </li>

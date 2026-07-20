@@ -7,7 +7,7 @@ import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useAuthUser } from "@/lib/useAuthUser";
 import { usePersonalLists } from "@/lib/usePersonalLists";
-import TopBar from "@/components/TopBar";
+import AppShell from "@/components/AppShell";
 import GroupView from "@/components/GroupView";
 import Spinner from "@/components/Spinner";
 import type { Group, GroupMovie, Member } from "@/lib/types";
@@ -223,16 +223,14 @@ export default function GroupPage() {
 
   if (loading || resolving || !group) {
     return (
-      <>
-        <TopBar user={user} onSignOut={signOut} />
+      <AppShell user={user} onSignOut={signOut}>
         <Spinner />
-      </>
+      </AppShell>
     );
   }
 
   return (
-    <>
-      <TopBar user={user} onSignOut={signOut} />
+    <AppShell user={user} onSignOut={signOut}>
       <GroupView
         group={group}
         movies={movies}
@@ -249,6 +247,6 @@ export default function GroupPage() {
         onLeave={handleLeave}
         onDelete={handleDelete}
       />
-    </>
+    </AppShell>
   );
 }

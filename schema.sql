@@ -81,6 +81,11 @@ alter table public.watchlist add column if not exists genre  text;
 alter table public.watched   add column if not exists rating numeric;
 alter table public.watched   add column if not exists genre  text;
 
+-- v5: personal good/ok/bad verdict on a watched movie (null = not yet rated).
+-- Distinct from the TMDB numeric rating; each user edits only their own row
+-- (covered by the existing "own watched" RLS policy — no new grant needed).
+alter table public.watched   add column if not exists verdict text;
+
 -- Speeds up the per-member fan-out in public.group_movies.
 create index if not exists watchlist_user_idx on public.watchlist(user_id);
 create index if not exists watched_user_idx    on public.watched(user_id);

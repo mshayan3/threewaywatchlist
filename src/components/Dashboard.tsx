@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import SearchBar from "./SearchBar";
 import PersonalMovieCard from "./PersonalMovieCard";
 import SortMenu from "./SortMenu";
-import { Gallery } from "./MovieRow";
-import type { AppUser, PersonalMovie, TmdbResult } from "@/lib/types";
+import { MovieGrid } from "./MovieRow";
+import type { AppUser, PersonalMovie, TmdbResult, Verdict } from "@/lib/types";
 
 interface DashboardProps {
   user: AppUser;
@@ -14,7 +14,7 @@ interface DashboardProps {
   onAdd: (r: TmdbResult) => void;
   onAddToWatched: (r: TmdbResult) => void;
   onMarkWatched: (m: PersonalMovie) => void;
-  onMoveToWatchlist: (m: PersonalMovie) => void;
+  onSetVerdict: (m: PersonalMovie, v: Verdict | null) => void;
   onRemoveFromWatchlist: (m: PersonalMovie) => void;
   onRemoveFromWatched: (m: PersonalMovie) => void;
 }
@@ -45,7 +45,7 @@ export default function Dashboard({
   onAdd,
   onAddToWatched,
   onMarkWatched,
-  onMoveToWatchlist,
+  onSetVerdict,
   onRemoveFromWatchlist,
   onRemoveFromWatched,
 }: DashboardProps) {
@@ -70,8 +70,7 @@ export default function Dashboard({
   const active = view === "watchlist" ? toWatch : watched;
 
   return (
-    <>
-    <main className="view-anim relative z-[2] mx-auto max-w-[1720px] px-4 pt-4 sm:px-8 lg:px-12">
+    <div className="view-anim">
       <h1 className="m-0 mb-1.5 font-display text-[clamp(26px,4vw,38px)] font-semibold tracking-[-0.02em]">
         Hey {firstName} 👋
       </h1>
@@ -79,7 +78,7 @@ export default function Dashboard({
         Everything you add here lands in your groups&apos; shared lists.
       </p>
 
-      <div className="max-w-[440px]">
+      <div className="mb-9 max-w-[640px]">
         <SearchBar
           watchlistIds={watchlistIds}
           watchedIds={watchedIds}
@@ -107,7 +106,7 @@ export default function Dashboard({
       </div>
 
       {active.length > 0 ? (
-        <Gallery>
+        <MovieGrid>
           {view === "watchlist"
             ? active.map((m) => (
                 <PersonalMovieCard
@@ -123,11 +122,11 @@ export default function Dashboard({
                   key={m.tmdbId}
                   movie={m}
                   variant="watched"
-                  onMoveToWatchlist={onMoveToWatchlist}
+                  onSetVerdict={onSetVerdict}
                   onRemove={onRemoveFromWatched}
                 />
               ))}
-        </Gallery>
+        </MovieGrid>
       ) : (
         <p className="rounded-[var(--radius)] border border-dashed border-border px-4 py-10 text-center text-[.95rem] text-faint">
           {view === "watchlist"
@@ -135,10 +134,7 @@ export default function Dashboard({
             : "Nothing watched yet. Mark movies as seen and they'll move here."}
         </p>
       )}
-
-    </main>
-      <Footer />
-    </>
+    </div>
   );
 }
 
@@ -182,25 +178,5 @@ export function Tabs<T extends string>({
         );
       })}
     </div>
-  );
-}
-
-export function Footer() {
-  return (
-    <footer
-      className="fixed inset-x-0 bottom-0 z-[20] border-t border-border py-2.5 text-center text-[12px] text-faint backdrop-blur-md"
-      style={{ background: "var(--glass)" }}
-    >
-      Movie data from{" "}
-      <a
-        href="https://www.themoviedb.org/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-text hover:underline"
-      >
-        TMDB
-      </a>{" "}
-      · not endorsed or certified by TMDB.
-    </footer>
   );
 }

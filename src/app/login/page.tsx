@@ -19,7 +19,7 @@ export default function LoginPage() {
   const [msg, setMsg] = useState<Msg>(null);
   // Where to land after auth — carries an invite link (/join/<token>) through
   // sign-in so a shared link still works for signed-out visitors.
-  const [next, setNext] = useState("/dashboard");
+  const [next, setNext] = useState("/home");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -89,7 +89,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: mail, password });
     setBusy(false);
     if (error) return setMsg({ text: error.message, kind: "err" });
-    router.push("/dashboard");
+    router.push("/home");
   }
 
   async function forgotPassword() {

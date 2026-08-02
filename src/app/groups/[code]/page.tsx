@@ -118,7 +118,7 @@ export default function GroupPage() {
       if (!active) return;
       if (!data) {
         toast("You're not a member of that group.");
-        router.replace("/dashboard");
+        router.replace("/home");
         return;
       }
       setGroup({ code, name: data.name, isOwner: data.created_by === user.id });
@@ -173,7 +173,7 @@ export default function GroupPage() {
     const { error } = await supabase.rpc("leave_group", { p_code: code });
     if (error) return toast("Couldn't leave: " + error.message);
     toast("You left the group");
-    router.replace("/dashboard");
+    router.replace("/home");
   };
 
   const handleDelete = async () => {
@@ -192,7 +192,7 @@ export default function GroupPage() {
     if (data === "notowner") return toast("Only the creator can delete this group.");
     if (data === "nogroup") return toast("Group not found.");
     toast("Group deleted");
-    router.replace("/dashboard");
+    router.replace("/home");
   };
 
   const onAddToMine = async (m: GroupMovie) => {

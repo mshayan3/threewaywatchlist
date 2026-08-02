@@ -156,8 +156,8 @@ export default function ProfilePage() {
           {/* Avatar */}
           <div className="mb-6 flex items-center gap-4">
             <span
-              className="grid h-[76px] w-[76px] flex-none place-items-center overflow-hidden rounded-2xl text-[24px] font-bold text-[#3b2e1e]"
-              style={{ background: "#b79a78" }}
+              className="grid h-[76px] w-[76px] flex-none place-items-center overflow-hidden rounded-2xl text-[24px] font-bold text-[#c8ccd4]"
+              style={{ background: "#3a4150" }}
             >
               {shownAvatar ? (
                 // eslint-disable-next-line @next/next/no-img-element

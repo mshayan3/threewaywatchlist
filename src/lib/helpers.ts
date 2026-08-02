@@ -1,7 +1,7 @@
 // Small presentation helpers.
 
-// Muted earth-tone avatar palette — all deep enough for white initials.
-const PALETTE = ["#6e7e6f", "#8a6d52", "#5f6e86", "#856a66", "#7a7550", "#937b54"];
+// Cool slate/steel avatar palette — all deep enough for white initials.
+const PALETTE = ["#3f4a5a", "#4a5568", "#3f5670", "#50566a", "#455a6e", "#3d5a5a"];
 
 export function initials(name: string | null | undefined): string {
   const p = (name || "?").trim().split(/\s+/);
@@ -16,8 +16,8 @@ export function colorFor(str: string | null | undefined): string {
 
 // Placeholder poster as an inline SVG data URI.
 export function noPoster(w: number, h: number): string {
-  const bg = "#f0e6d0";
-  const fg = "#8a8a94";
+  const bg = "#22262e";
+  const fg = "#8a909c";
   return (
     "data:image/svg+xml;utf8," +
     encodeURIComponent(
@@ -30,16 +30,16 @@ export function noPoster(w: number, h: number): string {
 }
 
 // Deterministic gradient for a movie poster fallback (keyed on title/id).
-// Muted earth tones — sage, tan, slate-blue, mauve, olive, sand — each paired
-// with a ~22%-darker shade (matching the design's diagonal poster fills).
+// Cool slate/steel/teal tones — each paired with a ~22%-darker shade, matching
+// the wireframe's gray diagonal poster fills.
 const GRADIENTS = [
-  "linear-gradient(150deg,#8a9a8b,#6b786c)",
-  "linear-gradient(150deg,#b79a78,#8f785d)",
-  "linear-gradient(150deg,#7c8aa0,#606b7c)",
-  "linear-gradient(150deg,#a98a86,#836b68)",
-  "linear-gradient(150deg,#9c9668,#7a7551)",
-  "linear-gradient(150deg,#c0a17c,#957d61)",
-  "linear-gradient(150deg,#8f8a76,#6f6b5c)",
+  "linear-gradient(150deg,#3f4a5a,#2c333f)",
+  "linear-gradient(150deg,#44506a,#2f3846)",
+  "linear-gradient(150deg,#3a5670,#28323e)",
+  "linear-gradient(150deg,#50566a,#33384a)",
+  "linear-gradient(150deg,#455a6e,#2c3a46)",
+  "linear-gradient(150deg,#3d5a5a,#2a3a3a)",
+  "linear-gradient(150deg,#4a4f5e,#30343f)",
 ];
 export function posterGradient(seed: string | number): string {
   const s = String(seed);

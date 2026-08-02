@@ -46,7 +46,7 @@ export default function ThemeToggle() {
       localStorage.setItem("tw_theme", next);
     } catch {}
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", next === "dark" ? "#131009" : "#d9d3c6");
+    if (meta) meta.setAttribute("content", next === "dark" ? "#0e1013" : "#eef1f5");
   };
 
   return (

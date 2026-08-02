@@ -1,11 +1,11 @@
 import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 
-// Muted earth-tone "posters" for the hero preview card.
+// Cool slate/steel "posters" for the hero preview card.
 const HERO = [
-  { title: "Past Lives", from: "#8a9a8b", to: "#6b786c" },
-  { title: "Perfect Days", from: "#b79a78", to: "#8f785d" },
-  { title: "Drive", from: "#9c9668", to: "#7a7551" },
+  { title: "Past Lives", from: "#3f4a5a", to: "#2c333f" },
+  { title: "Perfect Days", from: "#44506a", to: "#2f3846" },
+  { title: "Drive", from: "#3a5670", to: "#28323e" },
 ];
 
 // Public landing page. Auth-gated routes live under /dashboard and /groups.

@@ -6,78 +6,81 @@
    Display: Bricolage Grotesque · Body: Hanken Grotesk
    ========================================================================== */
 :root {
-  /* light is the default here, but the app boots dark via layout script */
-  --page-bg: #d9d3c6;
-  --frame: #efe8db;
-  --bar: #f4eee1;
-  --surface: #f7f2e7;
-  --surface2: #fbf7ee;
+  /* Cool-gray "wireframe" scheme — light variant. Dark (below) is the canonical
+     look; the app boots dark via the layout script. */
+  --page-bg: #eef1f5;
+  --frame: #ffffff;
+  --bar: #f5f7fa;
+  --surface: #ffffff;
+  --surface2: #eef1f5;
 
-  --text: #221d16;
-  --text-dim: #5c5344;
-  --text-faint: #8b8171;
-  --muted2: #a0967f;
+  --text: #14161a;
+  --text-dim: #3d4450;
+  --text-faint: #6b7280;
+  --muted2: #949aa6;
 
-  --border: #d8cdb8;   /* line2 — card / control borders */
-  --line: #e3dac9;     /* subtle dividers */
-  --chip-bg: #e7decb;
-  --chip-ink: #4a4231;
-  --input-bg: #fbf7ee;
+  --border: #dce1e8;   /* card / control borders */
+  --line: #e8ebf0;     /* subtle dividers */
+  --chip-bg: #eaeef3;
+  --chip-ink: #3d4450;
+  --input-bg: #ffffff;
 
-  /* primary action = dark ink button with cream text */
-  --accent: #231e16;
-  --accent-text: #f2eadb;
-  /* secondary / links / errors = warm terracotta */
-  --accent2: #c07a48;
-  --amber: #c08a3e;
+  /* primary action = dark ink button with light text */
+  --accent: #1a1d24;
+  --accent-text: #f4f6f9;
+  /* secondary / links = blue */
+  --accent2: #2f6fe0;
+  --amber: #c0872b;
 
   /* verdict colors (good / okay / bad) */
-  --good: #6e9166;
-  --okay: #c08a3e;
-  --bad: #c06148;
+  --good: #2f9e42;
+  --okay: #c0872b;
+  --bad: #d23b32;
 
-  --overlay: rgba(28, 22, 14, 0.62);
-  --glass: rgba(244, 238, 225, 0.82);
+  --overlay: rgba(20, 22, 26, 0.55);
+  --glass: rgba(245, 247, 250, 0.82);
 
-  --card-shadow: 0 22px 48px -26px rgba(45, 35, 20, 0.32);
-  --card-shadow-hover: 0 34px 70px -26px rgba(45, 35, 20, 0.4);
+  --card-shadow: 0 22px 48px -26px rgba(20, 25, 40, 0.22);
+  --card-shadow-hover: 0 34px 70px -26px rgba(20, 25, 40, 0.3);
 
-  --radius: 20px;
-  --radius-sm: 14px;
+  --radius: 14px;
+  --radius-sm: 10px;
 }
 
 [data-theme="dark"] {
-  --page-bg: #131009;
-  --frame: #211c13;
-  --bar: #28221a;
-  --surface: #2a2417;
-  --surface2: #322a1b;
+  /* Wireframe palette, byte-for-byte: #0e1013 body · #181b21 card · #1f232b bar
+     · #2c313b borders · #5b9dff accent · #3fb950 / #e0a92b / #e5534b verdicts. */
+  --page-bg: #0e1013;
+  --frame: #181b21;
+  --bar: #1f232b;
+  --surface: #22262e;
+  --surface2: #2c313b;
 
-  --text: #f1eadc;
-  --text-dim: #c4baa4;
-  --text-faint: #9c927c;
-  --muted2: #857c69;
+  --text: #f0f2f5;
+  --text-dim: #c8ccd4;
+  --text-faint: #8a909c;
+  --muted2: #6b7280;
 
-  --border: #413827;
-  --line: #39301f;
-  --chip-bg: #372f20;
-  --chip-ink: #dacfb6;
-  --input-bg: #322a1b;
+  --border: #2c313b;
+  --line: #262b33;
+  --chip-bg: #262b33;
+  --chip-ink: #c8ccd4;
+  --input-bg: #0e1013;
 
-  --accent: #efe6d2;
-  --accent-text: #221d14;
-  --accent2: #d98e5a;
-  --amber: #d9a24e;
+  --accent: #e8eaee;      /* light "ink" primary */
+  --accent-text: #14161a;
+  --accent2: #5b9dff;
+  --amber: #e0a92b;
 
-  --good: #86a97c;
-  --okay: #d9a24e;
-  --bad: #d1795f;
+  --good: #3fb950;
+  --okay: #e0a92b;
+  --bad: #e5534b;
 
-  --overlay: rgba(0, 0, 0, 0.62);
-  --glass: rgba(20, 16, 9, 0.78);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --glass: rgba(24, 27, 33, 0.82);
 
-  --card-shadow: 0 28px 60px -28px rgba(0, 0, 0, 0.66);
-  --card-shadow-hover: 0 40px 80px -28px rgba(0, 0, 0, 0.72);
+  --card-shadow: 0 28px 60px -28px rgba(0, 0, 0, 0.55);
+  --card-shadow-hover: 0 40px 80px -28px rgba(0, 0, 0, 0.62);
 }
 
 /* Expose tokens as Tailwind utility names (bg-surface, text-dim, border-border…) */

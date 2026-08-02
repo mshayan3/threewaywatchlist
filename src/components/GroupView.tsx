@@ -17,6 +17,9 @@ interface GroupViewProps {
   myWatchlistIds: Set<number>;
   myWatchedIds: Set<number>;
   myWatchCounts: Map<number, number>;
+  // When embedded in the desktop master-detail pane the rail is always visible,
+  // so the "‹ All groups" back link is hidden.
+  embedded?: boolean;
   onBack: () => void;
   onRetry: () => void;
   onAddToMine: (m: GroupMovie) => void;
@@ -62,6 +65,7 @@ export default function GroupView({
   myWatchlistIds,
   myWatchedIds,
   myWatchCounts,
+  embedded,
   onBack,
   onRetry,
   onAddToMine,
@@ -73,6 +77,7 @@ export default function GroupView({
   const [commonSort, setCommonSort] = useState<Sort>("demand");
   const [watchedSort, setWatchedSort] = useState<Sort>("title");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pick, setPick] = useState<GroupMovie | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -93,6 +98,20 @@ export default function GroupView({
   );
   const active = view === "common" ? common : watched;
 
+  // Films every current member wants (and nobody's seen) — the group's strongest
+  // "watch together" signal. byDemand already floats these to the top.
+  const everyoneWants = useMemo(
+    () => members.length > 0 && common.some((m) => m.queuedBy.length >= members.length),
+    [common, members.length]
+  );
+
+  // The decision mechanic: draw a random film from the common list for tonight.
+  const pickTonight = () => {
+    if (common.length === 0) return;
+    setView("common");
+    setPick(common[Math.floor(Math.random() * common.length)]);
+  };
+
   // Current user first, like the design's "You, Theo, Ravi & Jess".
   const ordered = useMemo(() => {
     if (!myUserId) return members;
@@ -104,12 +123,14 @@ export default function GroupView({
 
   return (
     <div className="view-anim">
-      <button
-        onClick={onBack}
-        className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-faint transition-colors hover:text-text"
-      >
-        ‹ All groups
-      </button>
+      {!embedded && (
+        <button
+          onClick={onBack}
+          className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-faint transition-colors hover:text-text"
+        >
+          ‹ All groups
+        </button>
+      )}
 
       <div className="mb-1.5 flex flex-wrap items-start justify-between gap-5">
         <div className="flex min-w-0 items-center gap-4">
@@ -181,6 +202,13 @@ export default function GroupView({
               {memberSummary(ordered, myUserId)}
             </span>
           )}
+          <button
+            onClick={pickTonight}
+            disabled={common.length === 0}
+            className="flex-none rounded-[10px] bg-accent px-4 py-2.5 text-[13.5px] font-bold text-accent-text transition-transform active:scale-95 disabled:opacity-45"
+          >
+            Pick tonight →
+          </button>
         </div>
       </div>
 
@@ -201,6 +229,30 @@ export default function GroupView({
         </div>
       )}
 
+      {pick && (
+        <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[14px] border border-accent2 bg-accent2/10 px-5 py-4">
+          <span className="text-[11.5px] font-bold uppercase tracking-[0.09em] text-accent2">
+            Tonight&apos;s pick
+          </span>
+          <span className="font-display text-[18px] font-semibold text-text">{pick.title}</span>
+          {pick.year && <span className="text-[13px] text-dim">{pick.year}</span>}
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={pickTonight}
+              className="rounded-[9px] border border-border px-3.5 py-2 text-[13px] font-semibold text-text transition-colors hover:border-accent2"
+            >
+              Re-roll
+            </button>
+            <button
+              onClick={() => setPick(null)}
+              className="rounded-[9px] px-3 py-2 text-[13px] font-semibold text-faint transition-colors hover:text-text"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8 flex flex-wrap items-end justify-between gap-3 border-b border-line">
         <Tabs
           value={view}
@@ -218,6 +270,22 @@ export default function GroupView({
           )}
         </div>
       </div>
+
+      {view === "common" && everyoneWants && (
+        <div
+          className="mb-5 flex items-center gap-2.5 rounded-[10px] border px-4 py-2.5 text-[13px] font-bold"
+          style={{
+            borderColor: "var(--good)",
+            background: "color-mix(in srgb, var(--good) 12%, transparent)",
+            color: "var(--good)",
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Everyone wants these — sorted to top
+        </div>
+      )}
 
       {active.length > 0 ? (
         <MovieGrid>

@@ -6,9 +6,9 @@ import type { PersonalMovie, Verdict } from "@/lib/types";
 
 // Theme-independent verdict colors (from the design tokens).
 const VERDICTS: { key: Verdict; label: string; color: string; tint: string }[] = [
-  { key: "good", label: "Good", color: "#6e9166", tint: "rgba(110,145,102,.16)" },
-  { key: "ok", label: "Okay", color: "#c08a3e", tint: "rgba(192,138,62,.16)" },
-  { key: "bad", label: "Bad", color: "#c06148", tint: "rgba(192,97,72,.16)" },
+  { key: "good", label: "Good", color: "#3fb950", tint: "rgba(63,185,80,.16)" },
+  { key: "ok", label: "Okay", color: "#e0a92b", tint: "rgba(224,169,43,.16)" },
+  { key: "bad", label: "Bad", color: "#e5534b", tint: "rgba(229,83,75,.16)" },
 ];
 
 function VerdictSelector({

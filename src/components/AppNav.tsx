@@ -58,8 +58,8 @@ function useSignOut(onSignOut: () => void) {
 function Avatar({ user, size }: { user: AppUser; size: number }) {
   return (
     <span
-      className="grid flex-none place-items-center overflow-hidden rounded-full font-bold text-[#3b2e1e]"
-      style={{ width: size, height: size, background: "#b79a78", fontSize: size * 0.36 }}
+      className="grid flex-none place-items-center overflow-hidden rounded-full font-bold text-[#c8ccd4]"
+      style={{ width: size, height: size, background: "#3a4150", fontSize: size * 0.36 }}
     >
       {user.avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -85,7 +85,7 @@ export function AppSidebar({
   const signOut = useSignOut(onSignOut);
 
   return (
-    <aside className="hidden w-[248px] flex-none flex-col gap-1 border-r border-line bg-bar px-3 py-4 lg:flex">
+    <aside className="hidden w-[248px] flex-none flex-col gap-1 border-r border-line bg-bar px-3 py-4 lg:flex lg:sticky lg:top-0 lg:h-screen lg:self-start">
       <Link
         href="/home"
         className="px-2 pb-3 pt-1 font-display text-[18px] font-bold tracking-[-0.02em]"

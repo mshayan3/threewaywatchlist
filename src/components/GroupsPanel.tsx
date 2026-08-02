@@ -12,6 +12,10 @@ interface GroupsPanelProps {
   myGroups: Group[];
   onEnter: (group: Group) => void;
   onChanged: () => void; // reload my_groups in the parent
+  // Rail mode for the desktop master-detail: single-column list, trimmed
+  // chrome, and the currently-open group highlighted.
+  compact?: boolean;
+  selectedCode?: string | null;
 }
 
 type Tab = "create" | "join" | null;
@@ -31,7 +35,14 @@ function tokenFromInput(raw: string): string {
   return s.replace(/^\/+|\/+$/g, "");
 }
 
-export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: GroupsPanelProps) {
+export default function GroupsPanel({
+  user,
+  myGroups,
+  onEnter,
+  onChanged,
+  compact,
+  selectedCode,
+}: GroupsPanelProps) {
   const toast = useToast();
   const [tab, setTab] = useState<Tab>(null);
   const [msg, setMsg] = useState<Msg>(null);
@@ -99,27 +110,46 @@ export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: Grou
 
   return (
     <div className="view-anim">
-      <div className="mb-2 flex flex-wrap items-end justify-between gap-4">
+      <div
+        className={
+          compact
+            ? "mb-4 flex flex-col gap-3"
+            : "mb-2 flex flex-wrap items-end justify-between gap-4"
+        }
+      >
         <div>
-          <h1 className="m-0 mb-1.5 font-display text-[clamp(26px,4vw,34px)] font-semibold tracking-[-0.02em]">
+          <h1
+            className={
+              "m-0 font-display font-semibold tracking-[-0.02em] " +
+              (compact ? "text-[20px]" : "mb-1.5 text-[clamp(26px,4vw,34px)]")
+            }
+          >
             Your groups
           </h1>
-          <p className="m-0 text-[15px] text-dim">
-            Shared lists with your crew. Seen movies just quietly disappear.
-          </p>
+          {!compact && (
+            <p className="m-0 text-[15px] text-dim">
+              Shared lists with your crew. Seen movies just quietly disappear.
+            </p>
+          )}
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className={compact ? "flex gap-2" : "flex flex-wrap gap-3"}>
           <button
             onClick={() => open("create")}
-            className="flex items-center gap-2 rounded-[11px] bg-accent px-5 py-3 text-[14px] font-semibold text-accent-text transition-transform active:scale-95"
+            className={
+              "flex items-center gap-2 rounded-[11px] bg-accent font-semibold text-accent-text transition-transform active:scale-95 " +
+              (compact ? "flex-1 justify-center px-3 py-2.5 text-[13px]" : "px-5 py-3 text-[14px]")
+            }
           >
-            <PlusIcon /> Create group
+            <PlusIcon /> {compact ? "New" : "Create group"}
           </button>
           <button
             onClick={() => open("join")}
-            className="flex items-center gap-2 rounded-[11px] border border-border px-5 py-3 text-[14px] font-semibold text-text transition-colors hover:border-accent2"
+            className={
+              "flex items-center gap-2 rounded-[11px] border border-border font-semibold text-text transition-colors hover:border-accent2 " +
+              (compact ? "flex-1 justify-center px-3 py-2.5 text-[13px]" : "px-5 py-3 text-[14px]")
+            }
           >
-            <LinkIcon /> Join with link
+            <LinkIcon /> {compact ? "Join" : "Join with link"}
           </button>
         </div>
       </div>
@@ -220,12 +250,54 @@ export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: Grou
         </div>
       )}
 
-      <div className="mb-3.5 mt-8 flex items-center gap-2.5">
-        <h2 className="m-0 font-display text-[19px] font-bold">Joined groups</h2>
+      <div
+        className={
+          "flex items-center gap-2.5 " + (compact ? "mb-2.5 mt-5" : "mb-3.5 mt-8")
+        }
+      >
+        <h2 className={"m-0 font-display font-bold " + (compact ? "text-[14px]" : "text-[19px]")}>
+          Joined groups
+        </h2>
         <Count>{myGroups.length}</Count>
       </div>
 
       {myGroups.length > 0 ? (
+        compact ? (
+          <ul className="flex list-none flex-col gap-1.5 p-0">
+            {myGroups.map((g) => {
+              const on = selectedCode === g.code;
+              return (
+                <li key={g.code}>
+                  <button
+                    onClick={() => onEnter({ code: g.code, name: g.name })}
+                    className={
+                      "flex w-full items-center gap-3 rounded-[12px] border px-3 py-2.5 text-left transition-colors " +
+                      (on
+                        ? "border-accent2 bg-surface2"
+                        : "border-border bg-surface hover:border-accent2")
+                    }
+                  >
+                    <span
+                      className="grid h-[34px] w-[34px] flex-none place-items-center rounded-[10px] font-display text-[15px] font-bold text-white"
+                      style={{ background: colorFor(g.name || g.code) }}
+                    >
+                      {initials(g.name || g.code)}
+                    </span>
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-[14px] font-bold text-text">
+                        {g.name || g.code}
+                      </span>
+                      <span className="truncate text-[12px] text-faint">
+                        {g.memberCount ?? 0} {g.memberCount === 1 ? "member" : "members"}
+                        {g.isOwner ? " · owner" : ""}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
         <GroupGrid>
           {myGroups.map((g) => {
             const enter = () => onEnter({ code: g.code, name: g.name });
@@ -285,6 +357,7 @@ export default function GroupsPanel({ user, myGroups, onEnter, onChanged }: Grou
             );
           })}
         </GroupGrid>
+        )
       ) : (
         <p className="rounded-[var(--radius)] border border-dashed border-border px-4 py-10 text-center text-[.95rem] text-faint">
           You&apos;re not in any groups yet — create one, or paste a friend&apos;s invite link to join.

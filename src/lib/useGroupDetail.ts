@@ -117,7 +117,7 @@ export function useGroupDetail(code: string | null, onExit?: () => void) {
     (async () => {
       const { data } = await supabase
         .from("groups")
-        .select("name, created_by")
+        .select("name, created_by, invite_token")
         .eq("code", code)
         .maybeSingle();
       if (!active) return;
@@ -127,7 +127,12 @@ export function useGroupDetail(code: string | null, onExit?: () => void) {
         setResolving(false);
         return;
       }
-      setGroup({ code, name: data.name, isOwner: data.created_by === user.id });
+      setGroup({
+        code,
+        name: data.name,
+        isOwner: data.created_by === user.id,
+        inviteToken: data.invite_token ?? undefined,
+      });
       setResolving(false);
       loadGroupMovies();
     })();
@@ -140,13 +145,17 @@ export function useGroupDetail(code: string | null, onExit?: () => void) {
   useEffect(() => {
     if (!group || !code) return;
     const channel = supabase
-      .channel("group-" + code)
+      .channel(`group-${code}-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "group_members", filter: `group_code=eq.${code}` },
         () => loadGroupMovies()
       )
-      .subscribe();
+      .subscribe((status: string) => {
+        // Re-sync once live, so a membership change between the resolve effect's
+        // initial load and this subscription connecting isn't missed.
+        if (status === "SUBSCRIBED") loadGroupMovies();
+      });
 
     const tick = () => {
       if (document.visibilityState === "visible") loadGroupMovies();
@@ -190,6 +199,35 @@ export function useGroupDetail(code: string | null, onExit?: () => void) {
       loadGroupMovies();
     },
     [personal, loadGroupMovies]
+  );
+
+  // Owner-only: remove another member from the group. Their personal lists are
+  // untouched; only their membership row goes.
+  const onRemoveMember = useCallback(
+    async (m: Member) => {
+      if (!group || !code) return;
+      const label = m.name || m.user_name || "this member";
+      if (
+        !(await confirmDialog({
+          title: `Remove ${label}?`,
+          message: "They lose access to this group. Their personal lists stay theirs.",
+          confirmLabel: "Remove",
+          danger: true,
+        }))
+      )
+        return;
+      const { data, error } = await supabase.rpc("remove_member", {
+        p_code: code,
+        p_user: m.user_id,
+      });
+      if (error) return toast("Couldn't remove: " + error.message);
+      if (data === "notowner") return toast("Only the group owner can remove members.");
+      if (data === "self") return toast('Use "Delete group" to remove yourself.');
+      if (data === "nogroup") return toast("Group not found.");
+      toast(`Removed ${label}`);
+      loadGroupMovies();
+    },
+    [group, code, confirmDialog, toast, loadGroupMovies]
   );
 
   const onLeave = useCallback(async () => {
@@ -240,6 +278,7 @@ export function useGroupDetail(code: string | null, onExit?: () => void) {
     loadGroupMovies,
     onAddToMine,
     onRemoveFromMine,
+    onRemoveMember,
     onLeave,
     onDelete,
   };

@@ -60,6 +60,14 @@ export function normalizeCode(s: string): string {
     .replace(/^-|-$/g, "");
 }
 
+// Build the shareable invite URL for a group's token, e.g.
+// https://host/join/<token>. Falls back to a relative path during SSR (no
+// window), which the client re-resolves once mounted.
+export function inviteUrl(token: string): string {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  return `${origin}/join/${token}`;
+}
+
 // Extract a 4-digit year from a TMDB release_date without assuming the string
 // is always a well-formed YYYY-MM-DD. Returns "" when no leading year is found.
 export function parseYear(releaseDate: string | null | undefined): string {

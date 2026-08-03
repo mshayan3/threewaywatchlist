@@ -55,6 +55,12 @@ export async function GET(request: Request) {
             { status: 429 }
           );
         }
+        if (res.status === 401) {
+          return NextResponse.json(
+            { error: "TMDB rejected the server token. Check TMDB_TOKEN." },
+            { status: 500 }
+          );
+        }
         return NextResponse.json({ error: `TMDB ${res.status}` }, { status: 502 });
       }
       const d = (await res.json()) as {

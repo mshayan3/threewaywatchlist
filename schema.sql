@@ -166,12 +166,17 @@ set search_path = public, extensions as $$
 declare tok text;
 begin
   if length(coalesce(p_code,'')) = 0 then return 'invalid'; end if;
-  if exists (select 1 from public.groups where code = p_code) then
-    return 'exists';
-  end if;
   tok := p_code || '-' || substr(md5(random()::text), 1, 6);
-  insert into public.groups(code, name, invite_token, created_by)
-    values (p_code, p_name, tok, auth.uid());
+  -- Rely on the code primary key for uniqueness rather than a separate
+  -- existence check: two concurrent creates of the same code could both pass a
+  -- check-then-insert, but only one can win the insert. The loser catches the
+  -- unique_violation and reports 'exists', so the race is impossible.
+  begin
+    insert into public.groups(code, name, invite_token, created_by)
+      values (p_code, p_name, tok, auth.uid());
+  exception when unique_violation then
+    return 'exists';
+  end;
   insert into public.group_members(group_code, user_id, user_name)
     values (p_code, auth.uid(), p_user_name);
   return tok;
@@ -214,6 +219,23 @@ create or replace function public.leave_group(p_code text)
 returns void language sql security definer
 set search_path = public as $fn$
   delete from public.group_members where group_code = p_code and user_id = auth.uid();
+$fn$;
+
+-- owner-only: remove another member from a group. The target's personal lists
+-- are untouched — only their membership row is deleted. The owner can't remove
+-- themselves this way (they use leave_group / delete_group instead).
+create or replace function public.remove_member(p_code text, p_user uuid)
+returns text language plpgsql security definer
+set search_path = public as $fn$
+declare owner uuid;
+begin
+  select created_by into owner from public.groups where code = p_code;
+  if owner is null       then return 'nogroup';  end if;
+  if owner <> auth.uid() then return 'notowner'; end if;
+  if p_user = owner      then return 'self';      end if;
+  delete from public.group_members where group_code = p_code and user_id = p_user;
+  return 'ok';
+end;
 $fn$;
 
 -- only the creator can delete a whole group. Members' personal lists survive;
@@ -292,6 +314,7 @@ grant execute on function public.create_group(text,text,text)      to authentica
 grant execute on function public.join_by_token(text,text)          to authenticated;
 grant execute on function public.my_groups()                       to authenticated;
 grant execute on function public.leave_group(text)                 to authenticated;
+grant execute on function public.remove_member(text,uuid)          to authenticated;
 grant execute on function public.delete_group(text)                to authenticated;
 grant execute on function public.group_movies(text)                to authenticated;
 
@@ -359,8 +382,18 @@ end; $$;
 
 grant execute on function public.increment_watch_count(bigint) to authenticated;
 
--- Note: resetting a watch count (on removal from the watched list) is a plain
--- delete of the row from the client, guarded by RLS — no RPC needed.
+-- Atomically remove a movie from the caller's watched list AND reset its watch
+-- counter. Both deletes run in one function (a single transaction), so a
+-- partial failure can't leave an orphaned watch_counts row behind. RLS still
+-- applies via auth.uid(); the function only ever touches the caller's own rows.
+create or replace function public.remove_from_watched(p_tmdb bigint)
+returns void language sql security definer
+set search_path = public as $fn$
+  delete from public.watched      where user_id = auth.uid() and tmdb_id = p_tmdb;
+  delete from public.watch_counts where user_id = auth.uid() and tmdb_id = p_tmdb;
+$fn$;
+
+grant execute on function public.remove_from_watched(bigint) to authenticated;
 
 -- Publish so a user's own watch-count changes stream to their open tabs.
 do $$
@@ -494,3 +527,198 @@ set search_path = public as $$
 $$;
 
 grant execute on function public.group_movies(text) to authenticated;
+
+-- ==========================================================================
+--  v7: RECOMMENDATION ENGINE (pgvector)
+--  ------------------------------------------------------------------------
+--  One content-based engine feeding two surfaces (Home "Recommended" + the
+--  Catch-up onboarding page). Every corpus film carries a multi-hot METADATA
+--  vector (genres + top keywords + director/cast), L2-normalized, produced by
+--  scripts/build-vectors.mjs. A user's TASTE vector is the weighted mean of
+--  their watched films' vectors (Good ≈ +1.0, unrated ≈ +0.4, Bad negative,
+--  scaled by rewatch count). Suggestions = cosine nearest-neighbours in the
+--  corpus, excluding anything the user has already queued or seen, cached per
+--  user in public.suggestions.
+--
+--  VECTOR LAYOUT — must match scripts/build-vectors.mjs (TOTAL_DIM):
+--    genres    19  fixed TMDB genre list        (dims   1.. 19)
+--    keywords 300  top keywords by corpus freq  (dims  20..319)
+--    people   200  top director/cast by freq    (dims 320..519)
+--    TOTAL    519
+-- ==========================================================================
+create extension if not exists vector;
+
+-- Shared movie catalog + its embeddings. Written only by the service-role batch
+-- job (scripts/build-vectors.mjs); read only through the SECURITY DEFINER RPCs
+-- below, so the large `embedding` column never ships to a browser.
+create table if not exists public.movie_vectors (
+  tmdb_id    bigint primary key,
+  title      text,
+  year       text,
+  poster     text,
+  rating     numeric,
+  genre      text,
+  popularity numeric,
+  embedding  vector(519),
+  updated_at timestamptz default now()
+);
+
+create index if not exists movie_vectors_popularity_idx
+  on public.movie_vectors(popularity desc);
+-- Cosine ANN index. A seq scan is already fine at ~5k rows; this future-proofs
+-- a larger corpus. Safe to create on an empty table.
+create index if not exists movie_vectors_embedding_idx
+  on public.movie_vectors using hnsw (embedding vector_cosine_ops);
+
+-- The explainable vocabulary the batch job assigned dims from (one row per
+-- non-genre feature dim). Rebuilt wholesale each run; handy for inspecting why
+-- a film was recommended.
+create table if not exists public.movie_vector_vocab (
+  dim  int primary key,
+  kind text not null,   -- 'keyword' | 'person'
+  term text not null,
+  ref  text             -- TMDB keyword/person id
+);
+
+-- Per-user cached recommendations (rebuilt by refresh_suggestions()).
+create table if not exists public.suggestions (
+  user_id     uuid   not null references auth.users(id) on delete cascade,
+  tmdb_id     bigint not null,
+  rank        int    not null,
+  score       real,
+  source      text,   -- 'taste' | 'cold'
+  computed_at timestamptz default now(),
+  primary key (user_id, tmdb_id)
+);
+create index if not exists suggestions_user_rank_idx on public.suggestions(user_id, rank);
+
+alter table public.movie_vectors      enable row level security;
+alter table public.movie_vector_vocab enable row level security;
+alter table public.suggestions        enable row level security;
+
+-- movie_vectors + vocab are a public catalog written only by service-role and
+-- read only via the RPCs below → no direct-select policy (locked down). A user
+-- may read only their own cached suggestion rows.
+drop policy if exists "own suggestions" on public.suggestions;
+create policy "own suggestions" on public.suggestions
+  for select to authenticated using (user_id = auth.uid());
+
+-- verdict + rewatch count → a single taste weight. Unrated-but-watched still
+-- counts as a mild positive; a "bad" verdict pushes the taste vector away.
+create or replace function public.taste_weight(p_verdict text, p_count integer)
+returns double precision language sql immutable as $$
+  select (case p_verdict
+            when 'good' then 1.0
+            when 'ok'   then 0.5
+            when 'bad'  then -0.6
+            else 0.4
+          end) * greatest(coalesce(p_count, 1), 1);
+$$;
+
+-- Recompute + cache the caller's suggestions. Returns how many rows were written.
+create or replace function public.refresh_suggestions(p_limit int default 40)
+returns int language plpgsql security definer
+set search_path = public, extensions as $$
+declare
+  uid   uuid := auth.uid();
+  taste vector(519);
+  n     int := 0;
+begin
+  if uid is null then return 0; end if;
+
+  -- Weighted mean of the caller's watched films that exist in the corpus.
+  -- The embedding is parsed from its text form ("[a,b,...]") rather than a
+  -- vector→array cast, so this works on any pgvector version.
+  with graded as (
+    select wd.tmdb_id, public.taste_weight(wd.verdict, wc.count) as weight
+    from public.watched wd
+    left join public.watch_counts wc
+      on wc.user_id = wd.user_id and wc.tmdb_id = wd.tmdb_id
+    where wd.user_id = uid
+  ),
+  dims as (
+    select d.dim, sum(d.val * g.weight) as s
+    from graded g
+    join public.movie_vectors mv on mv.tmdb_id = g.tmdb_id
+    cross join lateral unnest(
+      string_to_array(trim(both '[]' from mv.embedding::text), ',')::double precision[]
+    ) with ordinality as d(val, dim)
+    group by d.dim
+  )
+  select array_agg(s order by dim)::vector into taste from dims;
+
+  delete from public.suggestions where user_id = uid;
+
+  if taste is not null then
+    insert into public.suggestions(user_id, tmdb_id, rank, score, source)
+    select uid, t.tmdb_id, t.rnk, t.sim, 'taste'
+    from (
+      select mv.tmdb_id,
+             row_number() over (order by mv.embedding <=> taste) as rnk,
+             (1 - (mv.embedding <=> taste))::real                as sim
+      from public.movie_vectors mv
+      where mv.tmdb_id not in (
+        select tmdb_id from public.watched  where user_id = uid
+        union
+        select tmdb_id from public.watchlist where user_id = uid
+      )
+      order by mv.embedding <=> taste
+      limit p_limit
+    ) t;
+  else
+    -- Cold start: most-popular corpus films, floating the caller's watchlist
+    -- genres to the front, excluding anything already queued/seen.
+    insert into public.suggestions(user_id, tmdb_id, rank, score, source)
+    select uid, t.tmdb_id, t.rnk, t.pop, 'cold'
+    from (
+      select mv.tmdb_id,
+             row_number() over (
+               order by (mv.genre in (select genre from public.watchlist where user_id = uid)) desc,
+                        mv.popularity desc nulls last
+             ) as rnk,
+             coalesce(mv.popularity, 0)::real as pop
+      from public.movie_vectors mv
+      where mv.tmdb_id not in (
+        select tmdb_id from public.watched  where user_id = uid
+        union
+        select tmdb_id from public.watchlist where user_id = uid
+      )
+      order by (mv.genre in (select genre from public.watchlist where user_id = uid)) desc,
+               mv.popularity desc nulls last
+      limit p_limit
+    ) t;
+  end if;
+
+  get diagnostics n = row_count;
+  return n;
+end; $$;
+
+-- Read the caller's cached recommendations joined with display metadata. Auto-
+-- computes on a cold cache so the first call always returns something. Only the
+-- metadata columns leave the DB — never the embedding.
+create or replace function public.recommendations(p_limit int default 24)
+returns table(
+  tmdb_id bigint, title text, year text, poster text,
+  rating numeric, genre text, score real, source text
+)
+language plpgsql security definer
+set search_path = public, extensions as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then return; end if;
+  if not exists (select 1 from public.suggestions where user_id = uid) then
+    perform public.refresh_suggestions(greatest(p_limit, 40));
+  end if;
+  return query
+    select mv.tmdb_id, mv.title, mv.year, mv.poster, mv.rating, mv.genre,
+           s.score, s.source
+    from public.suggestions s
+    join public.movie_vectors mv on mv.tmdb_id = s.tmdb_id
+    where s.user_id = uid
+    order by s.rank
+    limit p_limit;
+end; $$;
+
+grant execute on function public.taste_weight(text, integer) to authenticated;
+grant execute on function public.refresh_suggestions(int)    to authenticated;
+grant execute on function public.recommendations(int)        to authenticated;

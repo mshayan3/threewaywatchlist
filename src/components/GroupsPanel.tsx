@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { colorFor, initials, normalizeCode } from "@/lib/helpers";
+import { colorFor, initials, inviteUrl, normalizeCode } from "@/lib/helpers";
 import { Count, GroupGrid } from "./MovieRow";
 import { useToast } from "./Toast";
 import type { AppUser, Group } from "@/lib/types";
@@ -20,12 +20,6 @@ interface GroupsPanelProps {
 
 type Tab = "create" | "join" | null;
 type Msg = { text: string; kind: "err" | "ok" } | null;
-
-// Build the shareable invite URL for a token, e.g. https://host/join/<token>.
-function inviteUrl(token: string): string {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  return `${origin}/join/${token}`;
-}
 
 // Accept either a full invite URL or a bare token pasted into the join field.
 function tokenFromInput(raw: string): string {

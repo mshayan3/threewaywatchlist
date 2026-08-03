@@ -51,6 +51,16 @@ export function CheckIcon({ className }: IconProps) {
   );
 }
 
+// Catch up = sparkles (fresh, recommended picks).
+export function SparklesIcon({ className }: IconProps) {
+  return (
+    <svg {...base(className)}>
+      <path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z" />
+      <path d="M18.5 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8.8-1.9z" />
+    </svg>
+  );
+}
+
 export function GroupsIcon({ className }: IconProps) {
   return (
     <svg {...base(className)}>

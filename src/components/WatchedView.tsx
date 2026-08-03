@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import PersonalMovieCard from "./PersonalMovieCard";
+import SortMenu from "./SortMenu";
 import { MovieGrid } from "./MovieRow";
+import { StatBlock, ViewToggle, FilterChip, type ViewMode } from "./ListChrome";
 import { posterGradient } from "@/lib/helpers";
 import { useConfirm } from "./ConfirmDialog";
 import type { PersonalMovie, Verdict } from "@/lib/types";
@@ -16,19 +18,23 @@ const V: Record<Verdict, { letter: string; label: string; color: string; tint: s
 const ORDER: Verdict[] = ["good", "ok", "bad"];
 
 type Filter = "all" | Verdict;
-type ViewMode = "grid" | "list";
+type Sort = "newest" | "rating" | "title";
 
 const byNewest = (a: PersonalMovie, b: PersonalMovie) =>
   new Date(b.at).getTime() - new Date(a.at).getTime();
-
-function monthKey(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return { key: "unknown", label: "Earlier" };
-  return {
-    key: `${d.getFullYear()}-${d.getMonth()}`,
-    label: d.toLocaleString("en-US", { month: "long", year: "numeric" }),
-  };
-}
+const byRating = (a: PersonalMovie, b: PersonalMovie) =>
+  (b.rating || 0) - (a.rating || 0) || a.title.localeCompare(b.title);
+const byTitle = (a: PersonalMovie, b: PersonalMovie) => a.title.localeCompare(b.title);
+const SORTERS: Record<Sort, (a: PersonalMovie, b: PersonalMovie) => number> = {
+  newest: byNewest,
+  rating: byRating,
+  title: byTitle,
+};
+const SORT_OPTIONS = [
+  { value: "newest" as Sort, label: "Newest" },
+  { value: "rating" as Sort, label: "Rating" },
+  { value: "title" as Sort, label: "A–Z" },
+];
 
 export default function WatchedView({
   watchedList,
@@ -41,6 +47,7 @@ export default function WatchedView({
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [view, setView] = useState<ViewMode>("grid");
+  const [sort, setSort] = useState<Sort>("newest");
 
   const counts = useMemo(() => {
     const c: Record<Verdict, number> = { good: 0, ok: 0, bad: 0 };
@@ -61,20 +68,12 @@ export default function WatchedView({
   }, [watchedList]);
 
   const filtered = useMemo(
-    () => watchedList.filter((m) => filter === "all" || m.verdict === filter).sort(byNewest),
-    [watchedList, filter]
+    () =>
+      watchedList
+        .filter((m) => filter === "all" || m.verdict === filter)
+        .sort(SORTERS[sort]),
+    [watchedList, filter, sort]
   );
-
-  // Group the filtered list into ordered month sections.
-  const sections = useMemo(() => {
-    const map = new Map<string, { label: string; items: PersonalMovie[] }>();
-    for (const m of filtered) {
-      const { key, label } = monthKey(m.at);
-      if (!map.has(key)) map.set(key, { label, items: [] });
-      map.get(key)!.items.push(m);
-    }
-    return [...map.values()];
-  }, [filtered]);
 
   return (
     <div className="view-anim">
@@ -83,14 +82,16 @@ export default function WatchedView({
       </h1>
 
       {/* Stats block */}
-      <div className="mb-4 flex w-max max-w-full flex-wrap overflow-hidden rounded-[10px] border border-border">
-        <Stat text={`${watchedList.length} films`} />
-        {topGenre && <Stat text={`Top genre · ${topGenre}`} divider />}
-      </div>
+      <StatBlock
+        items={[
+          `${watchedList.length} films`,
+          ...(topGenre ? [`Top genre · ${topGenre}`] : []),
+        ]}
+      />
 
       {watchedList.length > 0 && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          {/* G/O/B filter row */}
+          {/* Good / Okay / Bad filter row */}
           <div className="flex flex-wrap gap-2">
             <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>
               All {watchedList.length}
@@ -102,102 +103,43 @@ export default function WatchedView({
                 color={V[v].color}
                 onClick={() => setFilter(filter === v ? "all" : v)}
               >
-                {V[v].letter} {counts[v]}
+                {V[v].label} {counts[v]}
               </FilterChip>
             ))}
           </div>
-          {/* Grid / List toggle */}
-          <div className="flex overflow-hidden rounded-[8px] border border-border">
-            {(["grid", "list"] as ViewMode[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => setView(m)}
-                className={
-                  "px-4 py-2 text-[13px] font-semibold capitalize transition-colors " +
-                  (view === m ? "bg-surface2 text-text" : "text-faint hover:text-text")
-                }
-              >
-                {m}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <SortMenu value={sort} onChange={setSort} options={SORT_OPTIONS} />
+            <ViewToggle view={view} onChange={setView} />
           </div>
         </div>
       )}
 
-      {sections.length === 0 ? (
+      {filtered.length === 0 ? (
         <p className="rounded-[16px] border border-dashed border-border px-4 py-14 text-center text-[14px] text-faint">
           {watchedList.length === 0
             ? "Nothing watched yet. Mark films as seen and they'll land here."
             : "No films match this filter."}
         </p>
-      ) : (
-        <div className="flex flex-col gap-8">
-          {sections.map((s) => (
-            <section key={s.label}>
-              <h2 className="mb-3.5 font-display text-[15px] font-bold text-text">{s.label}</h2>
-              {view === "grid" ? (
-                <MovieGrid>
-                  {s.items.map((m) => (
-                    <PersonalMovieCard
-                      key={m.tmdbId}
-                      movie={m}
-                      variant="watched"
-                      onSetVerdict={onSetVerdict}
-                      onRemove={onRemove}
-                    />
-                  ))}
-                </MovieGrid>
-              ) : (
-                <ul className="flex list-none flex-col gap-2 p-0">
-                  {s.items.map((m) => (
-                    <WatchedRow key={m.tmdbId} movie={m} onSetVerdict={onSetVerdict} onRemove={onRemove} />
-                  ))}
-                </ul>
-              )}
-            </section>
+      ) : view === "grid" ? (
+        <MovieGrid>
+          {filtered.map((m) => (
+            <PersonalMovieCard
+              key={m.tmdbId}
+              movie={m}
+              variant="watched"
+              onSetVerdict={onSetVerdict}
+              onRemove={onRemove}
+            />
           ))}
-        </div>
+        </MovieGrid>
+      ) : (
+        <ul className="flex list-none flex-col gap-2 p-0">
+          {filtered.map((m) => (
+            <WatchedRow key={m.tmdbId} movie={m} onSetVerdict={onSetVerdict} onRemove={onRemove} />
+          ))}
+        </ul>
       )}
     </div>
-  );
-}
-
-function Stat({ text, divider }: { text: string; divider?: boolean }) {
-  return (
-    <span
-      className={
-        "px-4 py-2 text-[13.5px] font-semibold text-dim " +
-        (divider ? "border-l border-border" : "")
-      }
-    >
-      {text}
-    </span>
-  );
-}
-
-function FilterChip({
-  active,
-  color,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  color?: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex h-9 items-center rounded-[8px] border px-3.5 text-[13px] font-semibold transition-colors"
-      style={
-        active
-          ? { borderColor: color || "var(--text)", color: color || "var(--text)", background: "color-mix(in srgb, " + (color || "var(--text)") + " 12%, transparent)" }
-          : { borderColor: "var(--border)", color: color || "var(--text-faint)" }
-      }
-    >
-      {children}
-    </button>
   );
 }
 

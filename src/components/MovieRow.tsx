@@ -9,11 +9,12 @@ export function Count({ children }: { children: React.ReactNode }) {
   );
 }
 
-// The primary movie grid: 2 columns on phones, 3 on tablets, 4 on desktop —
-// wrapping into as many rows as needed (per the redesign's 4-col spec).
+// The primary movie grid: 3 columns on phones, 4 on tablets, 6 on desktop —
+// wrapping into as many rows as needed. Denser than the old 4-col layout so
+// posters read as compact cards rather than dominating the row.
 export function MovieGrid({ children }: { children: React.ReactNode }) {
   return (
-    <ul className="grid list-none grid-cols-2 gap-5 p-0 sm:grid-cols-3 sm:gap-7 lg:grid-cols-4">
+    <ul className="grid list-none grid-cols-3 gap-4 p-0 sm:grid-cols-4 sm:gap-5 lg:grid-cols-6">
       {children}
     </ul>
   );

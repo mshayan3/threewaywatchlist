@@ -67,8 +67,11 @@ export function useAuthUser() {
   // Keep the top-bar name/avatar live when the profile is edited elsewhere.
   useEffect(() => {
     if (!authUser) return;
+    // Unique topic per mount so React Strict Mode's double-invoke never reuses
+    // an already-subscribed channel (which would throw "cannot add
+    // postgres_changes callbacks after subscribe()").
     const channel = supabase
-      .channel("profile-" + authUser.id)
+      .channel(`profile-${authUser.id}-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "profiles", filter: `user_id=eq.${authUser.id}` },

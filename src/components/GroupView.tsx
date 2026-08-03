@@ -5,7 +5,8 @@ import GroupMovieCard from "./GroupMovieCard";
 import { MovieGrid } from "./MovieRow";
 import { Tabs } from "./Dashboard";
 import SortMenu from "./SortMenu";
-import { colorFor, initials } from "@/lib/helpers";
+import { useToast } from "./Toast";
+import { colorFor, initials, inviteUrl } from "@/lib/helpers";
 import type { Group, GroupMovie, Member } from "@/lib/types";
 
 interface GroupViewProps {
@@ -24,6 +25,7 @@ interface GroupViewProps {
   onRetry: () => void;
   onAddToMine: (m: GroupMovie) => void;
   onRemoveFromMine: (m: GroupMovie) => void;
+  onRemoveMember: (m: Member) => void;
   onLeave: () => void;
   onDelete: () => void;
 }
@@ -70,6 +72,7 @@ export default function GroupView({
   onRetry,
   onAddToMine,
   onRemoveFromMine,
+  onRemoveMember,
   onLeave,
   onDelete,
 }: GroupViewProps) {
@@ -77,8 +80,22 @@ export default function GroupView({
   const [commonSort, setCommonSort] = useState<Sort>("demand");
   const [watchedSort, setWatchedSort] = useState<Sort>("title");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
   const [pick, setPick] = useState<GroupMovie | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const toast = useToast();
+
+  // Share the group by copying its invite link to the clipboard. Anyone with
+  // the link can join (see the join_by_token RPC + /join/[token] route).
+  const copyInvite = async () => {
+    if (!group.inviteToken) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl(group.inviteToken));
+      toast("Invite link copied");
+    } catch {
+      toast("Couldn't copy — try again from the Groups page.");
+    }
+  };
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -165,6 +182,14 @@ export default function GroupView({
                 className="absolute left-0 top-[calc(100%+6px)] z-30 flex min-w-[180px] flex-col rounded-[var(--radius-sm)] border border-border bg-surface p-1.5"
                 style={{ boxShadow: "var(--card-shadow-hover)" }}
               >
+                {group.inviteToken && (
+                  <MenuItem onClick={() => { setMenuOpen(false); copyInvite(); }}>
+                    Copy invite link
+                  </MenuItem>
+                )}
+                <MenuItem onClick={() => { setMenuOpen(false); setMembersOpen((o) => !o); }}>
+                  {membersOpen ? "Hide members" : "Members"}
+                </MenuItem>
                 <MenuItem onClick={() => { setMenuOpen(false); onLeave(); }}>Leave group</MenuItem>
                 {group.isOwner && (
                   <MenuItem danger onClick={() => { setMenuOpen(false); onDelete(); }}>
@@ -211,6 +236,45 @@ export default function GroupView({
           </button>
         </div>
       </div>
+
+      {membersOpen && (
+        <div className="mb-6 mt-4 rounded-[var(--radius)] border border-border bg-surface2 p-2">
+          {ordered.map((m) => {
+            const label = m.name || m.user_name || "…";
+            const isMe = m.user_id === myUserId;
+            return (
+              <div
+                key={m.user_id}
+                className="flex items-center gap-3 rounded-[10px] px-3 py-2 transition-colors hover:bg-chip"
+              >
+                <span
+                  className="grid h-[30px] w-[30px] flex-none place-items-center overflow-hidden rounded-full text-[11px] font-bold text-white"
+                  style={m.avatar_url ? undefined : { background: colorFor(label) }}
+                >
+                  {m.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={m.avatar_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    initials(label)
+                  )}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-text">
+                  {label}
+                  {isMe && <span className="ml-1.5 text-[12px] font-medium text-faint">(you)</span>}
+                </span>
+                {group.isOwner && !isMe && (
+                  <button
+                    onClick={() => onRemoveMember(m)}
+                    className="flex-none rounded-lg border border-border px-3 py-1.5 text-[12.5px] font-semibold text-faint transition-colors hover:border-accent2 hover:text-text"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <p className="mb-8 mt-4 max-w-[560px] text-[15px] leading-[1.55] text-dim">
         Pulled from everyone&apos;s watchlists, minus anything a member&apos;s already seen.

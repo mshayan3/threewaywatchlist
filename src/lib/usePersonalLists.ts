@@ -132,11 +132,16 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
       onChangeRef.current?.();
     };
     const channel = supabase
-      .channel("me-" + user.id)
+      .channel(`me-${user.id}-${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", opt("watchlist"), handler)
       .on("postgres_changes", opt("watched"), handler)
       .on("postgres_changes", opt("watch_counts"), handler)
-      .subscribe();
+      .subscribe((status: string) => {
+        // Re-sync once the channel is actually live: a change that landed in the
+        // window between the initial reload() above and the subscription
+        // connecting would otherwise be missed.
+        if (status === "SUBSCRIBED") reload();
+      });
     return () => {
       supabase.removeChannel(channel);
     };
@@ -247,19 +252,13 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
   const removeFromWatched = useCallback(
     async (m: PersonalMovie) => {
       if (!user) return;
-      const { error } = await supabase
-        .from("watched")
-        .delete()
-        .match({ user_id: user.id, tmdb_id: m.tmdbId });
+      // Removing from watched also clears the durable watch counter (back to 0),
+      // so an accidental watched-add is fully wiped. Both deletes run inside one
+      // SECURITY DEFINER RPC so they commit together — a partial failure can no
+      // longer leave an orphaned watch_counts row behind. (Moving a movie back
+      // to the watchlist keeps its count; only removal resets it.)
+      const { error } = await supabase.rpc("remove_from_watched", { p_tmdb: m.tmdbId });
       if (error) return toast("Failed: " + error.message);
-      // Failsafe: removing from watched clears the watch counter entirely
-      // (back to 0), so an accidental watched-add is fully wiped. Note this only
-      // happens on removal — moving a movie back to the watchlist keeps its count.
-      const { error: cErr } = await supabase
-        .from("watch_counts")
-        .delete()
-        .match({ user_id: user.id, tmdb_id: m.tmdbId });
-      if (cErr) toast("Watch count not reset: " + cErr.message);
       after();
     },
     [user, toast, after]

@@ -10,6 +10,8 @@ interface SearchBarProps {
   watchedIds: Set<string>;
   onAdd: (result: TmdbResult) => void;
   placeholder?: string;
+  // Smaller field (sidebar) vs. the full-size dashboard/search field.
+  compact?: boolean;
 }
 
 export default function SearchBar({
@@ -17,10 +19,14 @@ export default function SearchBar({
   watchedIds,
   onAdd,
   placeholder = "Add a movie to your watchlist…",
+  compact = false,
 }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TmdbResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // True once a search has completed for the current query — lets us show a
+  // "no matches" row when it came back empty, instead of silently closing.
+  const [searched, setSearched] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -29,6 +35,7 @@ export default function SearchBar({
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
         setResults([]);
         setError(null);
+        setSearched(false);
       }
     };
     document.addEventListener("click", onDocClick);
@@ -44,6 +51,7 @@ export default function SearchBar({
   function clearSearch() {
     setResults([]);
     setError(null);
+    setSearched(false);
     setQuery("");
     if (timer.current) clearTimeout(timer.current);
   }
@@ -55,6 +63,7 @@ export default function SearchBar({
     if (!q) {
       setResults([]);
       setError(null);
+      setSearched(false);
       return;
     }
     timer.current = setTimeout(async () => {
@@ -62,14 +71,16 @@ export default function SearchBar({
         const r = await searchMovies(q);
         setResults(r);
         setError(null);
+        setSearched(true);
       } catch (err) {
         setResults([]);
         setError(err instanceof Error ? err.message : "Search failed");
+        setSearched(false);
       }
     }, 300);
   }
 
-  const open = results.length > 0 || !!error;
+  const open = results.length > 0 || !!error || searched;
 
   return (
     <div ref={wrapRef} className="relative">
@@ -89,7 +100,12 @@ export default function SearchBar({
         autoComplete="off"
         value={query}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-[13px] border border-border bg-surface2 py-[15px] pl-[46px] pr-4 text-[15px] text-text outline-none transition-colors focus:border-accent"
+        className={
+          "w-full border border-border bg-surface2 text-text outline-none transition-colors focus:border-accent " +
+          (compact
+            ? "rounded-[10px] py-2.5 pl-[38px] pr-3 text-[14px]"
+            : "rounded-[13px] py-[15px] pl-[46px] pr-4 text-[15px]")
+        }
       />
 
       {open && (
@@ -99,6 +115,8 @@ export default function SearchBar({
         >
           {error ? (
             <li className="p-3 text-[.9rem] text-[var(--bad)]">Search failed — {error}</li>
+          ) : results.length === 0 ? (
+            <li className="p-3 text-[.9rem] text-faint">No matches — try a different title.</li>
           ) : (
             results.map((r) => {
               const hasPoster = !!r.poster_path;

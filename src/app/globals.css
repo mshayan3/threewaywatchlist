@@ -6,28 +6,29 @@
    Display: Bricolage Grotesque · Body: Hanken Grotesk
    ========================================================================== */
 :root {
-  /* Cool-gray "wireframe" scheme — light variant. Dark (below) is the canonical
-     look; the app boots dark via the layout script. */
-  --page-bg: #eef1f5;
+  /* "Clean White" scheme — light variant: crisp white surfaces on a soft off-white
+     page, dark-ink primary button. Dark ("Obsidian", below) is the canonical look;
+     the app boots dark via the layout script. */
+  --page-bg: #f7f7f8;
   --frame: #ffffff;
-  --bar: #f5f7fa;
+  --bar: #ffffff;
   --surface: #ffffff;
-  --surface2: #eef1f5;
+  --surface2: #ececed;
 
-  --text: #14161a;
-  --text-dim: #3d4450;
+  --text: #101114;
+  --text-dim: #40434a;
   --text-faint: #6b7280;
   --muted2: #949aa6;
 
-  --border: #dce1e8;   /* card / control borders */
-  --line: #e8ebf0;     /* subtle dividers */
-  --chip-bg: #eaeef3;
-  --chip-ink: #3d4450;
+  --border: #ececee;   /* card / control borders */
+  --line: #f0f0f1;     /* subtle dividers */
+  --chip-bg: #ececed;
+  --chip-ink: #40434a;
   --input-bg: #ffffff;
 
   /* primary action = dark ink button with light text */
-  --accent: #1a1d24;
-  --accent-text: #f4f6f9;
+  --accent: #111318;
+  --accent-text: #ffffff;
   /* secondary / links = blue */
   --accent2: #2f6fe0;
   --amber: #c0872b;
@@ -37,35 +38,36 @@
   --okay: #c0872b;
   --bad: #d23b32;
 
-  --overlay: rgba(20, 22, 26, 0.55);
-  --glass: rgba(245, 247, 250, 0.82);
+  --overlay: rgba(16, 17, 20, 0.5);
+  --glass: rgba(255, 255, 255, 0.82);
 
-  --card-shadow: 0 22px 48px -26px rgba(20, 25, 40, 0.22);
-  --card-shadow-hover: 0 34px 70px -26px rgba(20, 25, 40, 0.3);
+  --card-shadow: 0 22px 48px -26px rgba(20, 25, 40, 0.16);
+  --card-shadow-hover: 0 34px 70px -26px rgba(20, 25, 40, 0.24);
 
   --radius: 14px;
   --radius-sm: 10px;
 }
 
 [data-theme="dark"] {
-  /* Wireframe palette, byte-for-byte: #0e1013 body · #181b21 card · #1f232b bar
-     · #2c313b borders · #5b9dff accent · #3fb950 / #e0a92b / #e5534b verdicts. */
-  --page-bg: #0e1013;
-  --frame: #181b21;
-  --bar: #1f232b;
-  --surface: #22262e;
-  --surface2: #2c313b;
+  /* "Obsidian" — neutral near-black, darker than the prior #0e1013 scheme:
+     #060708 body · #101217 frame · #16181d bar · #1a1d23 surface · #24272e borders
+     · #5b9dff accent · #3fb950 / #e0a92b / #e5534b verdicts. */
+  --page-bg: #060708;
+  --frame: #101217;
+  --bar: #16181d;
+  --surface: #1a1d23;
+  --surface2: #24272e;
 
   --text: #f0f2f5;
-  --text-dim: #c8ccd4;
-  --text-faint: #8a909c;
-  --muted2: #6b7280;
+  --text-dim: #c2c6cd;
+  --text-faint: #7c828d;
+  --muted2: #5a606b;
 
-  --border: #2c313b;
-  --line: #262b33;
-  --chip-bg: #262b33;
-  --chip-ink: #c8ccd4;
-  --input-bg: #0e1013;
+  --border: #24272e;
+  --line: #1e2027;
+  --chip-bg: #22252b;
+  --chip-ink: #c2c6cd;
+  --input-bg: #060708;
 
   --accent: #e8eaee;      /* light "ink" primary */
   --accent-text: #14161a;
@@ -76,11 +78,11 @@
   --okay: #e0a92b;
   --bad: #e5534b;
 
-  --overlay: rgba(0, 0, 0, 0.6);
-  --glass: rgba(24, 27, 33, 0.82);
+  --overlay: rgba(0, 0, 0, 0.65);
+  --glass: rgba(16, 18, 23, 0.82);
 
-  --card-shadow: 0 28px 60px -28px rgba(0, 0, 0, 0.55);
-  --card-shadow-hover: 0 40px 80px -28px rgba(0, 0, 0, 0.62);
+  --card-shadow: 0 28px 60px -28px rgba(0, 0, 0, 0.6);
+  --card-shadow-hover: 0 40px 80px -28px rgba(0, 0, 0, 0.68);
 }
 
 /* Expose tokens as Tailwind utility names (bg-surface, text-dim, border-border…) */

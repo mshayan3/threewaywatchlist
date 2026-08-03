@@ -57,6 +57,7 @@ export default function GroupDetail({
       onRetry={g.loadGroupMovies}
       onAddToMine={g.onAddToMine}
       onRemoveFromMine={g.onRemoveFromMine}
+      onRemoveMember={g.onRemoveMember}
       onLeave={g.onLeave}
       onDelete={g.onDelete}
     />

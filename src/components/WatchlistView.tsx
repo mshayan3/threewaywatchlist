@@ -5,6 +5,9 @@ import Link from "next/link";
 import PersonalMovieCard from "./PersonalMovieCard";
 import SortMenu from "./SortMenu";
 import { MovieGrid } from "./MovieRow";
+import { StatBlock, ViewToggle, type ViewMode } from "./ListChrome";
+import { posterGradient } from "@/lib/helpers";
+import { useConfirm } from "./ConfirmDialog";
 import type { PersonalMovie, Verdict } from "@/lib/types";
 
 const byNewest = (a: PersonalMovie, b: PersonalMovie) =>
@@ -35,24 +38,47 @@ export default function WatchlistView({
   onSetVerdict?: (m: PersonalMovie, v: Verdict | null) => void;
   onRemove: (m: PersonalMovie) => void;
 }) {
+  const [view, setView] = useState<ViewMode>("grid");
   const [sort, setSort] = useState<Sort>("newest");
+
+  const topGenre = useMemo(() => {
+    const tally = new Map<string, number>();
+    for (const m of watchlist) {
+      const g = (m.genre || "").split(/[,·]/)[0].trim();
+      if (g) tally.set(g, (tally.get(g) || 0) + 1);
+    }
+    let best = "";
+    let n = 0;
+    for (const [g, k] of tally) if (k > n) ((best = g), (n = k));
+    return best;
+  }, [watchlist]);
+
   const items = useMemo(() => [...watchlist].sort(SORTERS[sort]), [watchlist, sort]);
 
   return (
     <div className="view-anim">
-      <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="m-0 mb-1 font-display text-[clamp(24px,3.4vw,32px)] font-semibold tracking-[-0.02em]">
-            Watchlist
-          </h1>
-          <p className="m-0 text-[14px] text-dim">
-            {watchlist.length} {watchlist.length === 1 ? "film" : "films"} saved to watch
-          </p>
-        </div>
-        {items.length > 0 && <SortMenu value={sort} onChange={setSort} options={SORT_OPTIONS} />}
-      </div>
+      <h1 className="m-0 mb-4 font-display text-[clamp(24px,3.4vw,32px)] font-semibold tracking-[-0.02em]">
+        Watchlist
+      </h1>
 
-      {items.length > 0 ? (
+      {/* Stats block */}
+      <StatBlock
+        items={[
+          `${watchlist.length} ${watchlist.length === 1 ? "film" : "films"}`,
+          ...(topGenre ? [`Top genre · ${topGenre}`] : []),
+        ]}
+      />
+
+      {items.length > 0 && (
+        <div className="mb-6 flex flex-wrap items-center justify-end gap-3">
+          <SortMenu value={sort} onChange={setSort} options={SORT_OPTIONS} />
+          <ViewToggle view={view} onChange={setView} />
+        </div>
+      )}
+
+      {items.length === 0 ? (
+        <EmptyWatchlist />
+      ) : view === "grid" ? (
         <MovieGrid>
           {items.map((m) => (
             <PersonalMovieCard
@@ -65,9 +91,83 @@ export default function WatchlistView({
           ))}
         </MovieGrid>
       ) : (
-        <EmptyWatchlist />
+        <ul className="flex list-none flex-col gap-2 p-0">
+          {items.map((m) => (
+            <WatchlistRow
+              key={m.tmdbId}
+              movie={m}
+              onMarkWatched={onMarkWatched}
+              onRemove={onRemove}
+            />
+          ))}
+        </ul>
       )}
     </div>
+  );
+}
+
+// Compact list row for the "List" view: thumb · title/meta · mark-watched · remove.
+function WatchlistRow({
+  movie,
+  onMarkWatched,
+  onRemove,
+}: {
+  movie: PersonalMovie;
+  onMarkWatched: (m: PersonalMovie) => void;
+  onRemove: (m: PersonalMovie) => void;
+}) {
+  const confirmDialog = useConfirm();
+  const hasPoster = !!movie.poster;
+  const meta = [movie.year, movie.genre].filter(Boolean).join(" · ");
+
+  const remove = async () => {
+    const ok = await confirmDialog({
+      title: `Remove "${movie.title}"?`,
+      message: "This takes it off your watchlist.",
+      confirmLabel: "Remove",
+      danger: true,
+    });
+    if (ok) onRemove(movie);
+  };
+
+  return (
+    <li className="flex items-center gap-3.5 rounded-[12px] border border-line bg-surface px-3 py-2.5">
+      {hasPoster ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`https://image.tmdb.org/t/p/w92${movie.poster}`}
+          alt=""
+          className="h-[54px] w-9 flex-none rounded-[5px] object-cover"
+        />
+      ) : (
+        <span
+          className="h-[54px] w-9 flex-none rounded-[5px]"
+          style={{ background: posterGradient(movie.tmdbId) }}
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[14.5px] font-semibold text-text">{movie.title}</div>
+        <div className="truncate text-[12.5px] text-faint">{meta}</div>
+      </div>
+      <button
+        onClick={() => onMarkWatched(movie)}
+        className="flex flex-none items-center gap-1.5 rounded-[8px] border border-border px-3.5 py-2 text-[13px] font-semibold text-text transition-colors hover:border-accent2"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        Mark watched
+      </button>
+      <button
+        onClick={remove}
+        aria-label={`Remove ${movie.title}`}
+        className="grid h-8 w-8 flex-none place-items-center rounded-[7px] text-faint transition-colors hover:text-[var(--bad)]"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        </svg>
+      </button>
+    </li>
   );
 }
 

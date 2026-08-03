@@ -6,12 +6,14 @@ import type { AppUser } from "@/lib/types";
 import { initials } from "@/lib/helpers";
 import { useConfirm } from "./ConfirmDialog";
 import ThemeToggle from "./ThemeToggle";
+import SidebarSearch from "./SidebarSearch";
 import {
   HomeIcon,
   SearchIcon,
   BookmarkIcon,
   CheckIcon,
   GroupsIcon,
+  SparklesIcon,
 } from "./NavIcons";
 
 // One taxonomy, shared by the desktop sidebar and the mobile tab bar:
@@ -26,6 +28,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { href: "/home", label: "Home", Icon: HomeIcon, match: (p) => p === "/home" || p.startsWith("/dashboard") },
+  { href: "/catch-up", label: "Catch up", Icon: SparklesIcon, match: (p) => p.startsWith("/catch-up") },
   { href: "/search", label: "Search", Icon: SearchIcon, match: (p) => p.startsWith("/search") },
   { href: "/watchlist", label: "Watchlist", Icon: BookmarkIcon, match: (p) => p.startsWith("/watchlist") },
   { href: "/watched", label: "Watched", Icon: CheckIcon, match: (p) => p.startsWith("/watched") },
@@ -38,6 +41,7 @@ export function titleForPath(path: string): string {
   if (path.startsWith("/watchlist")) return "Watchlist";
   if (path.startsWith("/watched")) return "Watched";
   if (path.startsWith("/search")) return "Search";
+  if (path.startsWith("/catch-up")) return "Catch up";
   if (path.startsWith("/profile")) return "Profile";
   return "Threeway Watchlist";
 }
@@ -85,7 +89,7 @@ export function AppSidebar({
   const signOut = useSignOut(onSignOut);
 
   return (
-    <aside className="hidden w-[248px] flex-none flex-col gap-1 border-r border-line bg-bar px-3 py-4 lg:flex lg:sticky lg:top-0 lg:h-screen lg:self-start">
+    <aside className="hidden w-[288px] flex-none flex-col gap-1 border-r border-line bg-bar px-3 py-4 lg:flex lg:sticky lg:top-0 lg:h-screen lg:self-start">
       <Link
         href="/home"
         className="px-2 pb-3 pt-1 font-display text-[18px] font-bold tracking-[-0.02em]"
@@ -93,14 +97,16 @@ export function AppSidebar({
         Threeway Watchlist
       </Link>
 
-      {/* Permanent search field — a link that looks like an input. */}
-      <Link
-        href="/search"
-        className="mb-1.5 flex h-10 items-center gap-2.5 rounded-[10px] border border-border bg-input px-3 text-[14px] font-medium text-faint transition-colors hover:border-accent2"
-      >
-        <SearchIcon className="h-[18px] w-[18px]" />
-        Search films &amp; people…
-      </Link>
+      {/* Permanent, fully-functional search field (inline results + Add). Falls
+          back to a static link only during the signed-out/loading shell. */}
+      {user ? (
+        <SidebarSearch user={user} />
+      ) : (
+        <span className="mb-1.5 flex h-10 items-center gap-2.5 rounded-[10px] border border-border bg-input px-3 text-[14px] font-medium text-faint">
+          <SearchIcon className="h-[18px] w-[18px]" />
+          Search films…
+        </span>
+      )}
 
       <nav className="flex flex-col gap-0.5">
         {NAV.filter((n) => n.href !== "/search").map(({ href, label, Icon, match }) => {

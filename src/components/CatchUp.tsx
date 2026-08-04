@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePersonalLists } from "@/lib/usePersonalLists";
 import { useSuggestions } from "@/lib/useSuggestions";
 import { posterGradient } from "@/lib/helpers";
@@ -185,8 +186,14 @@ function HeroPoster({ movie }: { movie: PersonalMovie }) {
       }}
     >
       {hasPoster ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={poster} alt={`Poster for ${movie.title}`} className="h-full w-full object-cover" />
+        <Image
+          src={poster}
+          alt={`Poster for ${movie.title}`}
+          fill
+          priority
+          sizes="260px"
+          className="object-cover"
+        />
       ) : (
         <div className="absolute inset-0 grid place-items-center px-4 text-center font-display text-[22px] font-semibold uppercase leading-[1.05] tracking-wide text-white/90">
           {movie.title}
@@ -211,8 +218,7 @@ function FilmstripCard({ movie, onClick }: { movie: PersonalMovie; onClick: () =
           style={hasPoster ? undefined : { background: posterGradient(movie.tmdbId) }}
         >
           {hasPoster ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={poster} alt="" className="h-full w-full object-cover" />
+            <Image src={poster} alt="" fill sizes="110px" className="object-cover" />
           ) : (
             <span className="absolute inset-0 grid place-items-center px-2 text-center font-display text-[12px] font-semibold uppercase leading-tight text-white/90">
               {movie.title}

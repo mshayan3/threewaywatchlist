@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { fetchPersonDetail } from "@/lib/tmdb";
+import { fetchPersonDetail, prefetchMovieDetail } from "@/lib/tmdb";
 import { initials, posterGradient } from "@/lib/helpers";
 import Spinner from "@/components/Spinner";
 import type { PersonCredit, PersonDetail } from "@/lib/types";
@@ -32,7 +33,7 @@ function fmtDate(d: string): string {
 function FilmTile({ id, title, year, poster, rating, role }: PersonCredit) {
   const src = img(poster, "w300");
   return (
-    <Link href={`/movie/${id}`} className="group block">
+    <Link href={`/movie/${id}`} onMouseEnter={() => prefetchMovieDetail(id)} className="group block">
       <div
         className="relative aspect-[2/3] overflow-hidden rounded-[12px] border border-line transition-colors group-hover:border-accent2"
         style={{
@@ -41,8 +42,7 @@ function FilmTile({ id, title, year, poster, rating, role }: PersonCredit) {
         }}
       >
         {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={`Poster for ${title}`} loading="lazy" className="h-full w-full object-cover" />
+          <Image src={src} alt={`Poster for ${title}`} fill sizes="(max-width: 640px) 45vw, 160px" className="object-cover" />
         ) : (
           <span className="absolute inset-x-0 bottom-0 p-3 font-display text-[16px] font-semibold leading-[1.1] text-white/95">
             {title}
@@ -163,8 +163,14 @@ export default function PersonDetailView({ id }: { id: string }) {
         >
           <div className="relative aspect-[2/3]">
             {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt={person.name} className="h-full w-full object-cover" />
+              <Image
+                src={photo}
+                alt={person.name}
+                fill
+                priority
+                sizes="(max-width: 640px) 150px, 220px"
+                className="object-cover"
+              />
             ) : (
               <span
                 className="grid h-full w-full place-items-center text-[40px] font-extrabold text-white/90"

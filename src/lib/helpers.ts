@@ -74,3 +74,23 @@ export function parseYear(releaseDate: string | null | undefined): string {
   const m = /^(\d{4})/.exec((releaseDate || "").trim());
   return m ? m[1] : "";
 }
+
+// Split a stored genre string into its individual genres. Rows carry one or two
+// genres joined by "," (or a legacy "·"); the list/filter UIs treat each
+// separately. Returns [] for empty/blank genres.
+export function splitGenres(genre: string | null | undefined): string[] {
+  return (genre || "")
+    .split(/[,·]/)
+    .map((g) => g.trim())
+    .filter(Boolean);
+}
+
+// Distinct genres present across a set of movies, ordered most-common first,
+// then alphabetically. Used to build the filter chip rows.
+export function genreFacets(movies: { genre: string | null }[]): string[] {
+  const tally = new Map<string, number>();
+  for (const m of movies) for (const g of splitGenres(m.genre)) tally.set(g, (tally.get(g) || 0) + 1);
+  return [...tally.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([g]) => g);
+}

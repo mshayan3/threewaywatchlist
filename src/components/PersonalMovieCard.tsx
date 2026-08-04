@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { posterGradient } from "@/lib/helpers";
+import { prefetchMovieDetail } from "@/lib/tmdb";
 import { useConfirm } from "@/components/ConfirmDialog";
 import type { PersonalMovie, Verdict } from "@/lib/types";
 
@@ -89,12 +91,12 @@ export default function PersonalMovieCard({
         }}
       >
         {hasPoster ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={poster}
             alt={`Poster for ${movie.title}`}
-            loading="lazy"
-            className="h-full w-full object-cover"
+            fill
+            sizes="(max-width: 640px) 45vw, 200px"
+            className="object-cover"
           />
         ) : (
           <span className="absolute inset-x-0 bottom-0 p-3.5 font-display text-[19px] font-semibold leading-[1.1] text-white/95">
@@ -107,6 +109,7 @@ export default function PersonalMovieCard({
             clicks land on the control, not the link. */}
         <Link
           href={`/movie/${movie.tmdbId}`}
+          onMouseEnter={() => prefetchMovieDetail(movie.tmdbId)}
           aria-label={`View details for ${movie.title}`}
           className="absolute inset-0"
         />
@@ -136,6 +139,7 @@ export default function PersonalMovieCard({
       <div className="px-0.5 pt-3">
         <Link
           href={`/movie/${movie.tmdbId}`}
+          onMouseEnter={() => prefetchMovieDetail(movie.tmdbId)}
           className="clamp-2 block min-h-[2.4em] text-[15px] font-semibold leading-[1.25] hover:text-accent2"
         >
           {movie.title}

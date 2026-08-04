@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { searchMovies } from "@/lib/tmdb";
+import Image from "next/image";
+import { searchMovies, prefetchMovieDetail } from "@/lib/tmdb";
 import { parseYear, posterGradient } from "@/lib/helpers";
 import type { TmdbResult } from "@/lib/types";
 
@@ -134,14 +135,16 @@ export default function SearchBar({
                 >
                   <Link
                     href={`/movie/${r.id}`}
+                    onMouseEnter={() => prefetchMovieDetail(r.id)}
                     className="flex min-w-0 flex-1 items-center gap-3"
                     title={`View details for ${r.title}`}
                   >
                     {hasPoster ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={`https://image.tmdb.org/t/p/w92${r.poster_path}`}
                         alt=""
+                        width={40}
+                        height={60}
                         className="h-[60px] w-10 flex-none rounded-md object-cover"
                       />
                     ) : (

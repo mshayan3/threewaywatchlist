@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { fetchMovieDetail } from "@/lib/tmdb";
+import { fetchMovieDetail, prefetchPersonDetail } from "@/lib/tmdb";
 import { initials, posterGradient } from "@/lib/helpers";
 import Spinner from "@/components/Spinner";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -32,12 +33,12 @@ function CastTile({ id, name, character, profilePath }: MovieDetail["cast"][numb
   return (
     <Link
       href={`/person/${id}`}
+      onMouseEnter={() => prefetchPersonDetail(id)}
       className="group/cast flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-2 transition-colors hover:border-accent2"
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-[9px]">
         {photo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={photo} alt={name} loading="lazy" className="h-full w-full object-cover" />
+          <Image src={photo} alt={name} fill sizes="120px" className="object-cover" />
         ) : (
           <span
             className="grid h-full w-full place-items-center text-[22px] font-extrabold text-white/90"
@@ -151,11 +152,13 @@ export default function MovieDetailView({
             tail reveals whatever page background sits behind it. */}
         <div className="pointer-events-none absolute inset-x-0 top-0 -bottom-32 overflow-hidden">
           {backdrop ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={backdrop}
               alt=""
-              className="h-full w-full object-cover"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover"
               style={{ maskImage: FADE, WebkitMaskImage: FADE }}
             />
           ) : (
@@ -192,8 +195,14 @@ export default function MovieDetailView({
             >
               <div className="relative aspect-[2/3]">
                 {poster ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={poster} alt={`Poster for ${movie.title}`} className="h-full w-full object-cover" />
+                  <Image
+                    src={poster}
+                    alt={`Poster for ${movie.title}`}
+                    fill
+                    priority
+                    sizes="(max-width: 640px) 150px, 210px"
+                    className="object-cover"
+                  />
                 ) : (
                   <div
                     className="grid h-full w-full place-items-center p-4 text-center font-display text-[18px] font-semibold text-white/95"
@@ -248,7 +257,11 @@ export default function MovieDetailView({
                   {movie.directors.map((d, i) => (
                     <span key={d.id}>
                       {i > 0 && ", "}
-                      <Link href={`/person/${d.id}`} className="font-semibold underline-offset-2 hover:underline">
+                      <Link
+                        href={`/person/${d.id}`}
+                        onMouseEnter={() => prefetchPersonDetail(d.id)}
+                        className="font-semibold underline-offset-2 hover:underline"
+                      >
                         {d.name}
                       </Link>
                     </span>

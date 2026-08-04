@@ -23,9 +23,17 @@ interface TmdbApiResult {
   genre_ids?: number[];
 }
 
-function firstGenre(ids?: number[]): string {
-  for (const id of ids || []) if (GENRES[id]) return GENRES[id];
-  return "";
+// Up to the first two named genres, comma-joined (e.g. "Action, Adventure").
+// TMDB lists genre_ids primary-first, so the leading two read as the top genres.
+// Kept as a single string so it flows unchanged through the stored `genre`
+// column and every card's meta line; the list views split on /[,·]/.
+function firstGenres(ids?: number[]): string {
+  const names: string[] = [];
+  for (const id of ids || []) {
+    if (GENRES[id] && !names.includes(GENRES[id])) names.push(GENRES[id]);
+    if (names.length === 2) break;
+  }
+  return names.join(", ");
 }
 
 function round1(n?: number): number {
@@ -97,6 +105,7 @@ export async function GET(request: Request) {
     try {
       const res = await fetch(`https://api.themoviedb.org/3/movie/${encodeURIComponent(id)}`, {
         headers: { Authorization: `Bearer ${token}`, accept: "application/json" },
+        next: { revalidate: 86400 }, // movie details are effectively static — cache a day
       });
       if (!res.ok) {
         if (res.status === 429) {
@@ -118,11 +127,15 @@ export async function GET(request: Request) {
         vote_average?: number;
         genres?: { id: number; name: string }[];
       };
-      const g = d.genres?.[0];
+      const genre = (d.genres || [])
+        .slice(0, 2)
+        .map((g) => GENRES[g.id] || g.name || "")
+        .filter(Boolean)
+        .join(", ");
       return NextResponse.json({
         id: d.id,
         rating: d.vote_average ? Math.round(d.vote_average * 10) / 10 : 0,
-        genre: g ? GENRES[g.id] || g.name || "" : "",
+        genre,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "unknown error";
@@ -139,7 +152,7 @@ export async function GET(request: Request) {
     try {
       const res = await fetch(
         `${TMDB}/movie/${encodeURIComponent(movieId)}?append_to_response=credits`,
-        { headers }
+        { headers, next: { revalidate: 86400 } } // detail payload changes rarely — cache a day
       );
       if (!res.ok) return statusError(res.status);
       const d = (await res.json()) as {
@@ -194,7 +207,7 @@ export async function GET(request: Request) {
     try {
       const res = await fetch(
         `${TMDB}/person/${encodeURIComponent(personId)}?append_to_response=movie_credits`,
-        { headers }
+        { headers, next: { revalidate: 86400 } } // bio + filmography change rarely — cache a day
       );
       if (!res.ok) return statusError(res.status);
       const d = (await res.json()) as {
@@ -271,7 +284,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: `Unknown list "${list}".` }, { status: 400 });
     }
     try {
-      const res = await fetch(`${TMDB}${path}`, { headers });
+      const res = await fetch(`${TMDB}${path}`, {
+        headers,
+        next: { revalidate: 3600 }, // curated browse rows shift slowly — cache an hour
+      });
       if (!res.ok) return statusError(res.status);
       const data = await res.json();
 
@@ -308,7 +324,7 @@ export async function GET(request: Request) {
           year: yearOf(r.release_date),
           poster: r.poster_path ?? null,
           rating: round1(r.vote_average),
-          genre: firstGenre(r.genre_ids),
+          genre: firstGenres(r.genre_ids),
         }));
       return NextResponse.json({ kind: "movies", results });
     } catch (err) {
@@ -359,7 +375,7 @@ export async function GET(request: Request) {
         release_date: r.release_date,
         poster_path: r.poster_path,
         rating: r.vote_average ? Math.round(r.vote_average * 10) / 10 : 0,
-        genre: firstGenre(r.genre_ids),
+        genre: firstGenres(r.genre_ids),
       }));
     return NextResponse.json({ results });
   } catch (err) {

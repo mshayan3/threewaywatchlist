@@ -5,8 +5,9 @@ import GroupMovieCard from "./GroupMovieCard";
 import { MovieGrid } from "./MovieRow";
 import { Tabs } from "./Dashboard";
 import SortMenu from "./SortMenu";
+import { FilterChip } from "./ListChrome";
 import { useToast } from "./Toast";
-import { colorFor, initials, inviteUrl } from "@/lib/helpers";
+import { colorFor, genreFacets, initials, inviteUrl, splitGenres } from "@/lib/helpers";
 import type { Group, GroupMovie, Member } from "@/lib/types";
 
 interface GroupViewProps {
@@ -79,6 +80,7 @@ export default function GroupView({
   const [view, setView] = useState<View>("common");
   const [commonSort, setCommonSort] = useState<Sort>("demand");
   const [watchedSort, setWatchedSort] = useState<Sort>("title");
+  const [genre, setGenre] = useState<string>("all");
   const [menuOpen, setMenuOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
   const [pick, setPick] = useState<GroupMovie | null>(null);
@@ -113,7 +115,19 @@ export default function GroupView({
     () => movies.filter((m) => !nobodyWatched(m)).sort(SORTERS[watchedSort]),
     [movies, watchedSort]
   );
-  const active = view === "common" ? common : watched;
+  const activeAll = view === "common" ? common : watched;
+
+  // Genre filter facets for the active tab, most-common first. Applied after the
+  // tab split so chips only offer genres actually present on this tab.
+  const genres = useMemo(() => genreFacets(activeAll), [activeAll]);
+  const activeGenre = genre !== "all" && genres.includes(genre) ? genre : "all";
+  const active = useMemo(
+    () =>
+      activeGenre === "all"
+        ? activeAll
+        : activeAll.filter((m) => splitGenres(m.genre).includes(activeGenre)),
+    [activeAll, activeGenre]
+  );
 
   // Films every current member wants (and nobody's seen) — the group's strongest
   // "watch together" signal. byDemand already floats these to the top.
@@ -335,6 +349,23 @@ export default function GroupView({
         </div>
       </div>
 
+      {genres.length > 1 && (
+        <div className="mb-5 flex flex-wrap gap-2">
+          <FilterChip active={activeGenre === "all"} onClick={() => setGenre("all")}>
+            All {activeAll.length}
+          </FilterChip>
+          {genres.slice(0, 8).map((g) => (
+            <FilterChip
+              key={g}
+              active={activeGenre === g}
+              onClick={() => setGenre(activeGenre === g ? "all" : g)}
+            >
+              {g}
+            </FilterChip>
+          ))}
+        </div>
+      )}
+
       {view === "common" && everyoneWants && (
         <div
           className="mb-5 flex items-center gap-2.5 rounded-[10px] border px-4 py-2.5 text-[13px] font-bold"
@@ -361,6 +392,7 @@ export default function GroupView({
               isMine={myWatchlistIds.has(m.tmdbId)}
               iWatched={myWatchedIds.has(m.tmdbId)}
               watchCount={myWatchCounts.get(m.tmdbId) ?? 0}
+              myUserId={myUserId}
               onAddToMine={onAddToMine}
               onRemoveFromMine={onRemoveFromMine}
             />
@@ -368,9 +400,11 @@ export default function GroupView({
         </MovieGrid>
       ) : (
         <p className="rounded-[var(--radius)] border border-dashed border-border px-4 py-10 text-center text-[.95rem] text-faint">
-          {view === "common"
-            ? "Nothing to watch together yet — members can add movies from their dashboards."
-            : "No movies have been watched by anyone in the group yet."}
+          {activeGenre !== "all"
+            ? `No ${activeGenre} films on this tab.`
+            : view === "common"
+              ? "Nothing to watch together yet — members can add movies from their dashboards."
+              : "No movies have been watched by anyone in the group yet."}
         </p>
       )}
     </div>

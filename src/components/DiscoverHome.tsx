@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import SearchBar from "./SearchBar";
 import { usePersonalLists } from "@/lib/usePersonalLists";
-import { fetchList } from "@/lib/tmdb";
+import { fetchList, prefetchMovieDetail, prefetchPersonDetail } from "@/lib/tmdb";
 import { initials, posterGradient } from "@/lib/helpers";
 import type { AppUser, DiscoverList, DiscoverMovie, DiscoverPerson } from "@/lib/types";
 
@@ -27,14 +28,23 @@ function MoviePosterCard({ movie }: { movie: DiscoverMovie }) {
   const src = posterUrl(movie.poster);
   const meta = [movie.year, movie.genre].filter(Boolean).join(" · ");
   return (
-    <Link href={`/movie/${movie.id}`} className="group block w-[150px] flex-none snap-start">
+    <Link
+      href={`/movie/${movie.id}`}
+      onMouseEnter={() => prefetchMovieDetail(movie.id)}
+      className="group block w-[150px] flex-none snap-start"
+    >
       <div
         className="relative aspect-[2/3] overflow-hidden rounded-[12px] border border-line transition-colors group-hover:border-accent2"
         style={{ boxShadow: "var(--card-shadow)", ...(src ? {} : { background: posterGradient(movie.id) }) }}
       >
         {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={`Poster for ${movie.title}`} loading="lazy" className="h-full w-full object-cover" />
+          <Image
+            src={src}
+            alt={`Poster for ${movie.title}`}
+            fill
+            sizes="150px"
+            className="object-cover"
+          />
         ) : (
           <span className="absolute inset-x-0 bottom-0 p-3 font-display text-[15px] font-semibold leading-[1.1] text-white/95">
             {movie.title}
@@ -61,14 +71,17 @@ function PersonCard({ person }: { person: DiscoverPerson }) {
   const src = posterUrl(person.profile, "w185");
   const sub = person.knownForTitles[0] || person.knownFor;
   return (
-    <Link href={`/person/${person.id}`} className="group block w-[128px] flex-none snap-start text-center">
+    <Link
+      href={`/person/${person.id}`}
+      onMouseEnter={() => prefetchPersonDetail(person.id)}
+      className="group block w-[128px] flex-none snap-start text-center"
+    >
       <div
         className="relative mx-auto aspect-square w-[112px] overflow-hidden rounded-full border border-line transition-colors group-hover:border-accent2"
         style={{ boxShadow: "var(--card-shadow)", ...(src ? {} : { background: posterGradient(person.id) }) }}
       >
         {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={src} alt={person.name} loading="lazy" className="h-full w-full object-cover" />
+          <Image src={src} alt={person.name} fill sizes="112px" className="object-cover" />
         ) : (
           <span className="grid h-full w-full place-items-center text-[26px] font-extrabold text-white/90">
             {initials(person.name)}

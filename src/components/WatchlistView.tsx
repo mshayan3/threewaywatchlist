@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import PersonalMovieCard from "./PersonalMovieCard";
 import SortMenu from "./SortMenu";
 import { MovieGrid } from "./MovieRow";
-import { StatBlock, ViewToggle, type ViewMode } from "./ListChrome";
-import { posterGradient } from "@/lib/helpers";
+import { StatBlock, ViewToggle, FilterChip, type ViewMode } from "./ListChrome";
+import { genreFacets, posterGradient, splitGenres } from "@/lib/helpers";
 import { useConfirm } from "./ConfirmDialog";
 import type { PersonalMovie, Verdict } from "@/lib/types";
 
@@ -40,20 +41,25 @@ export default function WatchlistView({
 }) {
   const [view, setView] = useState<ViewMode>("grid");
   const [sort, setSort] = useState<Sort>("newest");
+  const [genre, setGenre] = useState<string>("all");
 
-  const topGenre = useMemo(() => {
-    const tally = new Map<string, number>();
-    for (const m of watchlist) {
-      const g = (m.genre || "").split(/[,·]/)[0].trim();
-      if (g) tally.set(g, (tally.get(g) || 0) + 1);
-    }
-    let best = "";
-    let n = 0;
-    for (const [g, k] of tally) if (k > n) ((best = g), (n = k));
-    return best;
-  }, [watchlist]);
+  // Genres present on the list, most-common first, capped so the chip row stays
+  // to a single tidy line. The leading facet doubles as the "top genre" stat.
+  const genres = useMemo(() => genreFacets(watchlist), [watchlist]);
+  const topGenre = genres[0] || "";
+  const filterGenres = useMemo(() => genres.slice(0, 8), [genres]);
 
-  const items = useMemo(() => [...watchlist].sort(SORTERS[sort]), [watchlist, sort]);
+  // Drop a stale genre filter if the selected genre no longer exists (e.g. after
+  // removing the last film of that genre).
+  const activeGenre = genre !== "all" && genres.includes(genre) ? genre : "all";
+
+  const items = useMemo(
+    () =>
+      watchlist
+        .filter((m) => activeGenre === "all" || splitGenres(m.genre).includes(activeGenre))
+        .sort(SORTERS[sort]),
+    [watchlist, activeGenre, sort]
+  );
 
   return (
     <div className="view-anim">
@@ -69,15 +75,40 @@ export default function WatchlistView({
         ]}
       />
 
-      {items.length > 0 && (
-        <div className="mb-6 flex flex-wrap items-center justify-end gap-3">
-          <SortMenu value={sort} onChange={setSort} options={SORT_OPTIONS} />
-          <ViewToggle view={view} onChange={setView} />
+      {watchlist.length > 0 && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          {/* Genre filter row — only when there's more than one genre to pick. */}
+          {filterGenres.length > 1 ? (
+            <div className="flex flex-wrap gap-2">
+              <FilterChip active={activeGenre === "all"} onClick={() => setGenre("all")}>
+                All {watchlist.length}
+              </FilterChip>
+              {filterGenres.map((g) => (
+                <FilterChip
+                  key={g}
+                  active={activeGenre === g}
+                  onClick={() => setGenre(activeGenre === g ? "all" : g)}
+                >
+                  {g}
+                </FilterChip>
+              ))}
+            </div>
+          ) : (
+            <span />
+          )}
+          <div className="flex items-center gap-3">
+            <SortMenu value={sort} onChange={setSort} options={SORT_OPTIONS} />
+            <ViewToggle view={view} onChange={setView} />
+          </div>
         </div>
       )}
 
-      {items.length === 0 ? (
+      {watchlist.length === 0 ? (
         <EmptyWatchlist />
+      ) : items.length === 0 ? (
+        <p className="rounded-[16px] border border-dashed border-border px-4 py-14 text-center text-[14px] text-faint">
+          No films match this filter.
+        </p>
       ) : view === "grid" ? (
         <MovieGrid>
           {items.map((m) => (
@@ -133,10 +164,11 @@ function WatchlistRow({
   return (
     <li className="flex items-center gap-3.5 rounded-[12px] border border-line bg-surface px-3 py-2.5">
       {hasPoster ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={`https://image.tmdb.org/t/p/w92${movie.poster}`}
           alt=""
+          width={36}
+          height={54}
           className="h-[54px] w-9 flex-none rounded-[5px] object-cover"
         />
       ) : (

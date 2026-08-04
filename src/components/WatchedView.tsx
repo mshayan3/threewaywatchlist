@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import PersonalMovieCard from "./PersonalMovieCard";
 import SortMenu from "./SortMenu";
 import { MovieGrid } from "./MovieRow";
@@ -170,10 +171,11 @@ function WatchedRow({
   return (
     <li className="flex items-center gap-3.5 rounded-[12px] border border-line bg-surface px-3 py-2.5">
       {hasPoster ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={`https://image.tmdb.org/t/p/w92${movie.poster}`}
           alt=""
+          width={36}
+          height={54}
           className="h-[54px] w-9 flex-none rounded-[5px] object-cover"
         />
       ) : (

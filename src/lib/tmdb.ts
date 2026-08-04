@@ -70,6 +70,23 @@ export async function fetchPersonDetail(id: number | string): Promise<PersonDeta
   return data as PersonDetail;
 }
 
+// Hover prefetch: warm the server Data Cache for a detail payload before the
+// user clicks through. The route's TMDB fetches are revalidate-cached, so this
+// first hit populates that cache and the real navigation reads it back fast.
+// Deduped per id+kind so repeated hovers fire at most one request.
+const prefetched = new Set<string>();
+function prefetchDetail(kind: "movie" | "person", id: number | string) {
+  const key = `${kind}:${id}`;
+  if (prefetched.has(key)) return;
+  prefetched.add(key);
+  // Fire-and-forget; drop the dedupe marker on failure so a later hover retries.
+  fetch(`/api/tmdb?${kind}=${encodeURIComponent(id)}`).catch(() => {
+    prefetched.delete(key);
+  });
+}
+export const prefetchMovieDetail = (id: number | string) => prefetchDetail("movie", id);
+export const prefetchPersonDetail = (id: number | string) => prefetchDetail("person", id);
+
 // Fetch a single movie's rating + genre from TMDB (via our proxy). Returns null
 // on any failure so callers can skip it silently during lazy backfill.
 export async function fetchMovieMeta(

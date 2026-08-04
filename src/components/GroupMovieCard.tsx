@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { colorFor, initials, posterGradient } from "@/lib/helpers";
+import { prefetchMovieDetail } from "@/lib/tmdb";
 import WatchCountBadge from "@/components/WatchCountBadge";
 import { useConfirm } from "@/components/ConfirmDialog";
 import type { GroupMovie, MoviePerson } from "@/lib/types";
@@ -13,6 +15,7 @@ interface GroupMovieCardProps {
   isMine: boolean; // already on the caller's personal watchlist
   iWatched: boolean; // caller has personally watched it
   watchCount: number; // caller's own watch count for this movie (0 = never)
+  myUserId?: string; // to label the caller as "You" in the who-has row
   onAddToMine: (m: GroupMovie) => void;
   onRemoveFromMine: (m: GroupMovie) => void;
 }
@@ -43,12 +46,54 @@ function OverlayAvatars({ people }: { people: MoviePerson[] }) {
   );
 }
 
+// "Who has this?" for the Common tab: an inline avatar row naming the members
+// who have the film in their personal watchlist. The caller sorts as "You".
+function WhoHasRow({ people, myUserId }: { people: MoviePerson[]; myUserId?: string }) {
+  if (people.length === 0) return null;
+  const ordered = myUserId
+    ? [...people.filter((p) => p.user_id === myUserId), ...people.filter((p) => p.user_id !== myUserId)]
+    : people;
+  const firstName = (p: MoviePerson) =>
+    p.user_id === myUserId ? "You" : (p.name || "…").split(/\s+/)[0];
+  const names = ordered.map(firstName);
+  const summary =
+    names.length === 1
+      ? names[0]
+      : names.length === 2
+        ? `${names[0]} & ${names[1]}`
+        : names.length === 3
+          ? `${names[0]}, ${names[1]} & ${names[2]}`
+          : `${names[0]}, ${names[1]} +${names.length - 2}`;
+  return (
+    <div className="mb-3 flex items-center gap-2" title={`On the watchlist of ${names.join(", ")}`}>
+      <div className="flex">
+        {ordered.slice(0, 4).map((p) => (
+          <span
+            key={p.user_id}
+            className="-ml-1.5 grid h-[22px] w-[22px] flex-none place-items-center overflow-hidden rounded-full border-2 border-frame text-[8.5px] font-extrabold text-white first:ml-0"
+            style={{ background: p.avatar_url ? undefined : colorFor(p.name) }}
+          >
+            {p.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              initials(p.name)
+            )}
+          </span>
+        ))}
+      </div>
+      <span className="min-w-0 flex-1 truncate text-[12px] text-faint">{summary} want to watch</span>
+    </div>
+  );
+}
+
 export default function GroupMovieCard({
   movie,
   variant,
   isMine,
   iWatched,
   watchCount,
+  myUserId,
   onAddToMine,
   onRemoveFromMine,
 }: GroupMovieCardProps) {
@@ -78,12 +123,12 @@ export default function GroupMovieCard({
         }}
       >
         {hasPoster ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={poster}
             alt={`Poster for ${movie.title}`}
-            loading="lazy"
-            className="h-full w-full object-cover"
+            fill
+            sizes="(max-width: 640px) 45vw, 200px"
+            className="object-cover"
           />
         ) : (
           <span className="absolute inset-x-0 bottom-0 p-3.5 font-display text-[19px] font-semibold leading-[1.1] text-white/95">
@@ -94,6 +139,7 @@ export default function GroupMovieCard({
             render after it in the DOM, so they stay above and unclipped. */}
         <Link
           href={`/movie/${movie.tmdbId}`}
+          onMouseEnter={() => prefetchMovieDetail(movie.tmdbId)}
           aria-label={`View details for ${movie.title}`}
           className="absolute inset-0"
         />
@@ -120,6 +166,8 @@ export default function GroupMovieCard({
           {movie.title}
         </Link>
         <div className="mb-3 mt-0.5 text-[13px] text-faint">{meta}</div>
+
+        {variant === "common" && <WhoHasRow people={movie.queuedBy} myUserId={myUserId} />}
 
         {iWatched ? (
           <div className="w-full cursor-default rounded-[9px] border border-border py-2.5 text-center text-[13.5px] font-semibold text-faint">

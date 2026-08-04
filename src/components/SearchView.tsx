@@ -1,17 +1,20 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import SearchBar from "./SearchBar";
 import { usePersonalLists } from "@/lib/usePersonalLists";
-
-type Personal = ReturnType<typeof usePersonalLists>;
+import type { AppUser } from "@/lib/types";
 
 // The Search destination (its own tab on mobile; the permanent field on
-// desktop links here). Adds land straight on the watchlist.
-export default function SearchView({ personal }: { personal: Personal }) {
-  const { watchlistIds, watchedIds, add } = personal;
+// desktop links here). Public — anyone can search; Adds land on the watchlist
+// when signed in, or send signed-out visitors to sign in.
+export default function SearchView({ user }: { user: AppUser | null }) {
+  const router = useRouter();
+  const { watchlistIds, watchedIds, add } = usePersonalLists(user);
   const wl = useMemo(() => new Set([...watchlistIds].map(String)), [watchlistIds]);
   const wd = useMemo(() => new Set([...watchedIds].map(String)), [watchedIds]);
+  const onAdd = user ? add : () => router.push("/login");
 
   return (
     <div className="view-anim">
@@ -19,14 +22,16 @@ export default function SearchView({ personal }: { personal: Personal }) {
         Search
       </h1>
       <p className="m-0 mb-7 text-[15px] text-dim">
-        Find a film to add to your watchlist. Results already on your lists are marked.
+        {user
+          ? "Find a film to add to your watchlist. Results already on your lists are marked."
+          : "Find any film or person. Sign in to save films to a watchlist."}
       </p>
 
       <div className="max-w-[640px]">
         <SearchBar
           watchlistIds={wl}
           watchedIds={wd}
-          onAdd={add}
+          onAdd={onAdd}
           placeholder="Search films & people…"
         />
       </div>

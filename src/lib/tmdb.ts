@@ -1,5 +1,5 @@
 import Fuse from "fuse.js";
-import type { TmdbResult } from "@/lib/types";
+import type { DiscoverList, MovieDetail, PersonDetail, TmdbResult } from "@/lib/types";
 
 // How many suggestions we actually surface in the dropdown.
 const MAX_RESULTS = 8;
@@ -41,6 +41,33 @@ export function rerank(results: TmdbResult[], query: string): TmdbResult[] {
   const matchedIds = new Set(matched.map((m) => m.id));
   const rest = results.filter((m) => !matchedIds.has(m.id));
   return [...matched, ...rest];
+}
+
+// Fetch the full detail payload for a movie's description page (via our proxy).
+// Throws with the server's error message so the page can render a failed state.
+export async function fetchMovieDetail(id: number | string): Promise<MovieDetail> {
+  const res = await fetch(`/api/tmdb?movie=${encodeURIComponent(id)}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Lookup failed (${res.status})`);
+  return data as MovieDetail;
+}
+
+// Fetch a curated browse row for the public home page. `key` is one of the
+// server-recognized list keys (now_playing, trending, top_rated, popular,
+// upcoming, popular_people).
+export async function fetchList(key: string): Promise<DiscoverList> {
+  const res = await fetch(`/api/tmdb?list=${encodeURIComponent(key)}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `List failed (${res.status})`);
+  return data as DiscoverList;
+}
+
+// Fetch a person's bio + filmography for the director/actor page.
+export async function fetchPersonDetail(id: number | string): Promise<PersonDetail> {
+  const res = await fetch(`/api/tmdb?person=${encodeURIComponent(id)}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Lookup failed (${res.status})`);
+  return data as PersonDetail;
 }
 
 // Fetch a single movie's rating + genre from TMDB (via our proxy). Returns null

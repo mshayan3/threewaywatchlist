@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { searchMovies } from "@/lib/tmdb";
 import { parseYear, posterGradient } from "@/lib/helpers";
 import type { TmdbResult } from "@/lib/types";
@@ -131,25 +132,31 @@ export default function SearchBar({
                   key={r.id}
                   className="flex items-center gap-3 rounded-[10px] p-2 transition-colors hover:bg-chip"
                 >
-                  {hasPoster ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={`https://image.tmdb.org/t/p/w92${r.poster_path}`}
-                      alt=""
-                      className="h-[60px] w-10 flex-none rounded-md object-cover"
-                    />
-                  ) : (
-                    <span
-                      className="h-[60px] w-10 flex-none rounded-md"
-                      style={{ background: posterGradient(r.id) }}
-                    />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[.92rem] font-semibold">{r.title}</div>
-                    <div className="text-[.82rem] text-dim">
-                      {[year, r.genre].filter(Boolean).join(" · ")}
+                  <Link
+                    href={`/movie/${r.id}`}
+                    className="flex min-w-0 flex-1 items-center gap-3"
+                    title={`View details for ${r.title}`}
+                  >
+                    {hasPoster ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={`https://image.tmdb.org/t/p/w92${r.poster_path}`}
+                        alt=""
+                        className="h-[60px] w-10 flex-none rounded-md object-cover"
+                      />
+                    ) : (
+                      <span
+                        className="h-[60px] w-10 flex-none rounded-md"
+                        style={{ background: posterGradient(r.id) }}
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[.92rem] font-semibold">{r.title}</div>
+                      <div className="text-[.82rem] text-dim">
+                        {[year, r.genre].filter(Boolean).join(" · ")}
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                   <button
                     disabled={already}
                     onClick={() => {

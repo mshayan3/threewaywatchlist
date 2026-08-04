@@ -1,6 +1,6 @@
 # Project Structure
 
-_Last mapped: 2026-08-03 18:07 (PKT)_
+_Last mapped: 2026-08-04 19:29 (PKT)_
 
 ```
 Threeway Watchlist/
@@ -28,12 +28,18 @@ Threeway Watchlist/
 │   │   │   │   └── page.tsx
 │   │   │   └── page.tsx
 │   │   ├── home/
-│   │   │   └── page.tsx
+│   │   │   └── page.tsx           # legacy → redirects to "/"
 │   │   ├── join/
 │   │   │   └── [token]/
 │   │   │       └── page.tsx
 │   │   ├── login/
 │   │   │   └── page.tsx
+│   │   ├── movie/
+│   │   │   └── [id]/
+│   │   │       └── page.tsx     # movie description page
+│   │   ├── person/
+│   │   │   └── [id]/
+│   │   │       └── page.tsx     # director / actor page
 │   │   ├── profile/
 │   │   │   └── page.tsx
 │   │   ├── search/
@@ -44,7 +50,7 @@ Threeway Watchlist/
 │   │   │   └── page.tsx
 │   │   ├── globals.css
 │   │   ├── layout.tsx
-│   │   └── page.tsx
+│   │   └── page.tsx              # public discover home (was marketing landing)
 │   ├── components/
 │   │   ├── AppNav.tsx
 │   │   ├── AppShell.tsx
@@ -52,17 +58,20 @@ Threeway Watchlist/
 │   │   ├── AuthView.tsx
 │   │   ├── ConfirmDialog.tsx
 │   │   ├── Dashboard.tsx
+│   │   ├── DiscoverHome.tsx        # public home body: search hero + browse rows
 │   │   ├── GroupDetail.tsx
 │   │   ├── GroupMovieCard.tsx
 │   │   ├── GroupPicker.tsx
 │   │   ├── GroupsPanel.tsx
 │   │   ├── GroupView.tsx
 │   │   ├── CatchUp.tsx
-│   │   ├── Home.tsx
+│   │   ├── Home.tsx                # retired (empty module) — recs live on Catch-up
 │   │   ├── ListChrome.tsx
 │   │   ├── MovieCard.tsx
+│   │   ├── MovieDetailView.tsx    # /movie/[id] description page body
 │   │   ├── MovieRow.tsx
 │   │   ├── NavIcons.tsx
+│   │   ├── PersonDetailView.tsx   # /person/[id] director/actor page body
 │   │   ├── PersonalMovieCard.tsx
 │   │   ├── SearchBar.tsx
 │   │   ├── SearchView.tsx
@@ -86,7 +95,8 @@ Threeway Watchlist/
 │   │   ├── useGroupDetail.ts
 │   │   ├── useMyGroups.ts
 │   │   ├── usePersonalLists.ts
-│   │   ├── usePersonalPage.ts
+│   │   ├── usePersonalPage.ts      # auth-gated pages (redirects signed-out)
+│   │   ├── usePublicPage.ts        # public pages (resolves user, no redirect)
 │   │   └── useSuggestions.ts
 │   └── middleware.ts
 ├── .env.local

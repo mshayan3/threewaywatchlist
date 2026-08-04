@@ -1,24 +1,7 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { usePersonalPage } from "@/lib/usePersonalPage";
-import AppShell from "@/components/AppShell";
-import Home from "@/components/Home";
-import Spinner from "@/components/Spinner";
-
-export default function HomePage() {
-  const { user, loading, personal, signOut } = usePersonalPage();
-
-  if (loading || !user) {
-    return (
-      <AppShell user={null} onSignOut={signOut}>
-        <Spinner />
-      </AppShell>
-    );
-  }
-
-  return (
-    <AppShell user={user} onSignOut={signOut}>
-      <Home user={user} personal={personal} />
-    </AppShell>
-  );
+// The home page now lives at the site root ("/"), which is public. This legacy
+// path just forwards there so old links / bookmarks keep working.
+export default function HomeRedirect() {
+  redirect("/");
 }

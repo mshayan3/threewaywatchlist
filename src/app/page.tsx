@@ -1,114 +1,20 @@
-import Link from "next/link";
-import ThemeToggle from "@/components/ThemeToggle";
+"use client";
 
-// Cool slate/steel "posters" for the hero preview card.
-const HERO = [
-  { title: "Past Lives", from: "#3f4a5a", to: "#2c333f" },
-  { title: "Perfect Days", from: "#44506a", to: "#2f3846" },
-  { title: "Drive", from: "#3a5670", to: "#28323e" },
-];
+import { usePublicPage } from "@/lib/usePublicPage";
+import AppShell from "@/components/AppShell";
+import DiscoverHome from "@/components/DiscoverHome";
+import Spinner from "@/components/Spinner";
 
-// Public landing page. Auth-gated routes live under /dashboard and /groups.
-export default function Landing() {
+// Public home / landing: a discover surface open to everyone. Signed-out
+// visitors can browse and search; the watchlist, watched, and group sections
+// stay gated (middleware redirects them to /login). The signed-in app shell
+// appears once a session resolves.
+export default function HomePage() {
+  const { user, loading, signOut } = usePublicPage();
+
   return (
-    <div className="min-h-screen w-full px-0 py-0 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
-      <div
-        className="mx-auto w-full max-w-[1440px] overflow-hidden border-y border-border bg-frame sm:rounded-[20px] sm:border"
-        style={{ boxShadow: "var(--card-shadow-hover)" }}
-      >
-        {/* signed-out top bar */}
-        <header className="flex items-center justify-between gap-4 border-b border-line bg-bar px-5 py-5 sm:px-10">
-          <div className="flex items-baseline gap-2.5">
-            <span className="font-display text-[22px] font-bold tracking-[-0.02em]">Threeway</span>
-            <span className="hidden text-[11px] font-semibold uppercase tracking-[0.22em] text-muted2 sm:inline">
-              watchlist
-            </span>
-          </div>
-          <div className="flex items-center gap-3.5">
-            <ThemeToggle />
-            <Link
-              href="/login"
-              className="rounded-full bg-accent px-[22px] py-2.5 text-[14px] font-semibold text-accent-text transition-transform active:scale-95"
-            >
-              Sign in
-            </Link>
-          </div>
-        </header>
-
-        {/* hero */}
-        <div className="view-anim grid items-center gap-10 px-6 py-14 sm:px-10 sm:py-20 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14 lg:px-16 lg:pb-[76px] lg:pt-[84px]">
-          <div>
-            <div className="mb-7 inline-block rounded-full border border-border px-[15px] py-[7px] text-[12.5px] font-semibold text-faint">
-              No more &ldquo;wait — have you seen it?&rdquo;
-            </div>
-            <h1 className="m-0 mb-6 font-display text-[clamp(38px,5.4vw,60px)] font-semibold leading-[1.02] tracking-[-0.025em]">
-              Everybody&apos;s watchlist, minus what you&apos;ve already seen.
-            </h1>
-            <p className="m-0 mb-10 max-w-[445px] text-[18px] leading-[1.6] text-dim">
-              Keep your own list of movies to watch. Pool it with your friends and Threeway
-              quietly hides anything someone&apos;s already seen — so you&apos;re left with stuff
-              you can actually watch together.
-            </p>
-            <div className="flex flex-wrap items-center gap-3.5">
-              <Link
-                href="/login"
-                className="rounded-[12px] bg-accent px-[30px] py-[15px] text-[15px] font-semibold text-accent-text transition-transform active:scale-[.98]"
-              >
-                Get started
-              </Link>
-              <Link
-                href="/login"
-                className="rounded-[12px] border border-border px-7 py-[15px] text-[15px] font-semibold text-text transition-colors hover:border-accent2"
-              >
-                I&apos;ve got an account
-              </Link>
-            </div>
-          </div>
-
-          {/* preview card */}
-          <div className="relative rounded-[18px] border border-border bg-surface p-7">
-            <div className="mb-5 flex items-center justify-between">
-              <div className="text-[14px] font-bold">Roommates</div>
-              <div className="text-[12.5px] font-semibold text-faint">7 movies everyone still needs</div>
-            </div>
-            <div className="grid grid-cols-3 gap-3.5">
-              {HERO.map((m) => (
-                <div
-                  key={m.title}
-                  className="flex aspect-[2/3] items-end rounded-[10px] p-3 font-display text-[15px] font-semibold leading-[1.12] text-white/95"
-                  style={{ background: `linear-gradient(150deg, ${m.from}, ${m.to})` }}
-                >
-                  {m.title}
-                </div>
-              ))}
-            </div>
-            <div className="mt-[18px] flex items-center gap-2.5 rounded-[11px] bg-chip px-3.5 py-3">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: "var(--good)" }} aria-hidden="true">
-                <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <div className="text-[13px] text-dim">
-                <b className="text-text">Aftersun</b> hidden — Theo&apos;s already seen it.
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* footer bar */}
-        <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-bar px-6 py-6 sm:px-10">
-          <span className="text-[13px] text-faint">© 2026 Threeway Watchlist</span>
-          <span className="text-[13px] text-faint">
-            Movie data &amp; posters from{" "}
-            <a
-              href="https://www.themoviedb.org/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-accent2 hover:opacity-80"
-            >
-              TMDB
-            </a>
-          </span>
-        </footer>
-      </div>
-    </div>
+    <AppShell user={user} onSignOut={signOut}>
+      {loading ? <Spinner /> : <DiscoverHome user={user} />}
+    </AppShell>
   );
 }

@@ -95,3 +95,88 @@ export interface TmdbResult {
   rating?: number;
   genre?: string;
 }
+
+// ---- movie / person detail (from /api/tmdb?movie= and ?person=) -----------
+
+// A person as referenced from a movie's credits (director or cast member).
+export interface CreditPerson {
+  id: number;
+  name: string;
+  profilePath: string | null;
+}
+
+// A cast member additionally carries the character they played.
+export interface CastCredit extends CreditPerson {
+  character: string;
+}
+
+// Full movie detail for the description page. Shaped server-side in /api/tmdb
+// from /movie/{id}?append_to_response=credits.
+export interface MovieDetail {
+  id: number;
+  title: string;
+  tagline: string;
+  overview: string;
+  year: string;
+  releaseDate: string;
+  runtime: number; // minutes (0 when unknown)
+  rating: number;
+  voteCount: number;
+  genres: string[];
+  poster: string | null;
+  backdrop: string | null;
+  directors: CreditPerson[];
+  cast: CastCredit[];
+}
+
+// One film in a person's filmography. `role` is the character (acting credits)
+// or the crew job (directing credits).
+export interface PersonCredit {
+  id: number; // movie id
+  title: string;
+  year: string;
+  poster: string | null;
+  rating: number;
+  role: string;
+}
+
+// ---- discover-list cards (from /api/tmdb?list=) ---------------------------
+
+// A movie card in a public browse row (In Theaters / Trending / Top Rated…).
+export interface DiscoverMovie {
+  id: number;
+  title: string;
+  year: string;
+  poster: string | null;
+  rating: number;
+  genre: string;
+}
+
+// A person card in the Popular People row.
+export interface DiscoverPerson {
+  id: number;
+  name: string;
+  profile: string | null;
+  knownFor: string; // department, e.g. "Acting" / "Directing"
+  knownForTitles: string[];
+}
+
+// Discriminated payload returned by ?list=. `kind` says how to read `results`.
+export type DiscoverList =
+  | { kind: "movies"; results: DiscoverMovie[] }
+  | { kind: "people"; results: DiscoverPerson[] };
+
+// Full person detail for the director/actor page. Shaped server-side in
+// /api/tmdb from /person/{id}?append_to_response=movie_credits.
+export interface PersonDetail {
+  id: number;
+  name: string;
+  biography: string;
+  profile: string | null;
+  knownFor: string; // known_for_department, e.g. "Directing" / "Acting"
+  birthday: string | null;
+  deathday: string | null;
+  placeOfBirth: string | null;
+  actingCredits: PersonCredit[];
+  directingCredits: PersonCredit[];
+}

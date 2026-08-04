@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { colorFor, initials, posterGradient } from "@/lib/helpers";
 import WatchCountBadge from "@/components/WatchCountBadge";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -89,6 +90,13 @@ export default function GroupMovieCard({
             {movie.title}
           </span>
         )}
+        {/* Poster links through to the movie's description page. Badges below
+            render after it in the DOM, so they stay above and unclipped. */}
+        <Link
+          href={`/movie/${movie.tmdbId}`}
+          aria-label={`View details for ${movie.title}`}
+          className="absolute inset-0"
+        />
         {/* On the Common tab the poster stays clean — on-list state is shown by
             the button below. Watched keeps the who-saw-it avatars. */}
         {variant === "watched" && <OverlayAvatars people={people} />}
@@ -105,7 +113,12 @@ export default function GroupMovieCard({
       </div>
 
       <div className="px-0.5 pt-3">
-        <div className="clamp-2 min-h-[2.4em] text-[15px] font-semibold leading-[1.25]">{movie.title}</div>
+        <Link
+          href={`/movie/${movie.tmdbId}`}
+          className="clamp-2 block min-h-[2.4em] text-[15px] font-semibold leading-[1.25] hover:text-accent2"
+        >
+          {movie.title}
+        </Link>
         <div className="mb-3 mt-0.5 text-[13px] text-faint">{meta}</div>
 
         {iWatched ? (

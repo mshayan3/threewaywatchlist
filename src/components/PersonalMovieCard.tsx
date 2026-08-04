@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { posterGradient } from "@/lib/helpers";
 import { useConfirm } from "@/components/ConfirmDialog";
 import type { PersonalMovie, Verdict } from "@/lib/types";
@@ -101,9 +102,18 @@ export default function PersonalMovieCard({
           </span>
         )}
 
+        {/* Whole poster links through to the movie's description page; the
+            overlay controls below sit above it (later in the DOM) so their
+            clicks land on the control, not the link. */}
+        <Link
+          href={`/movie/${movie.tmdbId}`}
+          aria-label={`View details for ${movie.title}`}
+          className="absolute inset-0"
+        />
+
         {movie.rating > 0 && (
           <div
-            className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold text-[#f4eedf]"
+            className="pointer-events-none absolute right-2.5 top-2.5 z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold text-[#f4eedf]"
             style={{ background: "var(--overlay)" }}
           >
             <span className="text-amber">★</span> {movie.rating.toFixed(1)}
@@ -114,7 +124,7 @@ export default function PersonalMovieCard({
           onClick={handleRemove}
           title="Remove"
           aria-label={`Remove ${movie.title}`}
-          className="absolute left-2.5 top-2.5 grid h-7 w-7 place-items-center rounded-full text-white opacity-0 backdrop-blur-sm transition-opacity hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-100"
+          className="absolute left-2.5 top-2.5 z-10 grid h-7 w-7 place-items-center rounded-full text-white opacity-0 backdrop-blur-sm transition-opacity hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-100"
           style={{ background: "var(--overlay)" }}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -124,7 +134,12 @@ export default function PersonalMovieCard({
       </div>
 
       <div className="px-0.5 pt-3">
-        <div className="clamp-2 min-h-[2.4em] text-[15px] font-semibold leading-[1.25]">{movie.title}</div>
+        <Link
+          href={`/movie/${movie.tmdbId}`}
+          className="clamp-2 block min-h-[2.4em] text-[15px] font-semibold leading-[1.25] hover:text-accent2"
+        >
+          {movie.title}
+        </Link>
         <div className="mb-3 mt-0.5 text-[13px] text-faint">{meta}</div>
 
         {variant === "watchlist" ? (

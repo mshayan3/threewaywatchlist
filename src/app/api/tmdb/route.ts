@@ -28,6 +28,56 @@ function firstGenre(ids?: number[]): string {
   return "";
 }
 
+function round1(n?: number): number {
+  return n ? Math.round(n * 10) / 10 : 0;
+}
+
+function yearOf(date?: string | null): string {
+  const m = /^(\d{4})/.exec((date || "").trim());
+  return m ? m[1] : "";
+}
+
+const TMDB = "https://api.themoviedb.org/3";
+
+// Map a non-OK TMDB response to the error shape callers already expect. 429
+// (rate limited — retryable) and 401 (bad server token — a config problem) get
+// their own messages; everything else is a generic 502.
+function statusError(status: number): NextResponse {
+  if (status === 429) {
+    return NextResponse.json(
+      { error: "TMDB rate limit reached — wait a moment and try again." },
+      { status: 429 }
+    );
+  }
+  if (status === 401) {
+    return NextResponse.json(
+      { error: "TMDB rejected the server token. Check TMDB_TOKEN." },
+      { status: 500 }
+    );
+  }
+  return NextResponse.json({ error: `TMDB ${status}` }, { status: 502 });
+}
+
+// One TMDB crew/cast entry as returned under append_to_response=credits.
+interface TmdbCredit {
+  id: number;
+  name: string;
+  profile_path?: string | null;
+  job?: string;
+  character?: string;
+}
+
+// One entry in a person's movie_credits (cast or crew).
+interface TmdbPersonCredit {
+  id: number;
+  title?: string;
+  release_date?: string;
+  poster_path?: string | null;
+  vote_average?: number;
+  job?: string;
+  character?: string;
+}
+
 export async function GET(request: Request) {
   const token = process.env.TMDB_TOKEN;
   if (!token) {
@@ -77,6 +127,193 @@ export async function GET(request: Request) {
     } catch (err) {
       const message = err instanceof Error ? err.message : "unknown error";
       return NextResponse.json({ error: `Lookup failed: ${message}` }, { status: 502 });
+    }
+  }
+
+  const headers = { Authorization: `Bearer ${token}`, accept: "application/json" };
+
+  // Movie-detail branch: full description-page payload (overview, runtime,
+  // genres, director(s), top cast) for /movie/[id].
+  const movieId = url.searchParams.get("movie")?.trim();
+  if (movieId) {
+    try {
+      const res = await fetch(
+        `${TMDB}/movie/${encodeURIComponent(movieId)}?append_to_response=credits`,
+        { headers }
+      );
+      if (!res.ok) return statusError(res.status);
+      const d = (await res.json()) as {
+        id: number;
+        title: string;
+        tagline?: string;
+        overview?: string;
+        release_date?: string;
+        runtime?: number;
+        vote_average?: number;
+        vote_count?: number;
+        poster_path?: string | null;
+        backdrop_path?: string | null;
+        genres?: { id: number; name: string }[];
+        credits?: { cast?: TmdbCredit[]; crew?: TmdbCredit[] };
+      };
+      const directors = (d.credits?.crew || [])
+        .filter((c) => c.job === "Director")
+        .map((c) => ({ id: c.id, name: c.name, profilePath: c.profile_path ?? null }));
+      const cast = (d.credits?.cast || []).slice(0, 12).map((c) => ({
+        id: c.id,
+        name: c.name,
+        profilePath: c.profile_path ?? null,
+        character: c.character || "",
+      }));
+      return NextResponse.json({
+        id: d.id,
+        title: d.title,
+        tagline: d.tagline || "",
+        overview: d.overview || "",
+        year: yearOf(d.release_date),
+        releaseDate: d.release_date || "",
+        runtime: d.runtime || 0,
+        rating: round1(d.vote_average),
+        voteCount: d.vote_count || 0,
+        genres: (d.genres || []).map((g) => GENRES[g.id] || g.name).filter(Boolean),
+        poster: d.poster_path ?? null,
+        backdrop: d.backdrop_path ?? null,
+        directors,
+        cast,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "unknown error";
+      return NextResponse.json({ error: `Lookup failed: ${message}` }, { status: 502 });
+    }
+  }
+
+  // Person-detail branch: bio + movie filmography split into acting vs.
+  // directing, for /person/[id] (serves both the actor and director pages).
+  const personId = url.searchParams.get("person")?.trim();
+  if (personId) {
+    try {
+      const res = await fetch(
+        `${TMDB}/person/${encodeURIComponent(personId)}?append_to_response=movie_credits`,
+        { headers }
+      );
+      if (!res.ok) return statusError(res.status);
+      const d = (await res.json()) as {
+        id: number;
+        name: string;
+        biography?: string;
+        profile_path?: string | null;
+        known_for_department?: string;
+        birthday?: string | null;
+        deathday?: string | null;
+        place_of_birth?: string | null;
+        movie_credits?: { cast?: TmdbPersonCredit[]; crew?: TmdbPersonCredit[] };
+      };
+
+      const toCredit = (c: TmdbPersonCredit, role: string) => ({
+        id: c.id,
+        title: c.title || "",
+        year: yearOf(c.release_date),
+        poster: c.poster_path ?? null,
+        rating: round1(c.vote_average),
+        role,
+      });
+      // Newest first; undated films (year "") sink to the bottom.
+      const byYearDesc = (a: { year: string }, b: { year: string }) =>
+        (b.year || "0").localeCompare(a.year || "0");
+
+      const actingCredits = (d.movie_credits?.cast || [])
+        .filter((c) => c.title)
+        .map((c) => toCredit(c, c.character || ""))
+        .sort(byYearDesc);
+
+      // A person can be credited on the same film in several crew roles; keep
+      // only their Director credits and one row per film.
+      const seen = new Set<number>();
+      const directingCredits = (d.movie_credits?.crew || [])
+        .filter((c) => c.job === "Director" && c.title)
+        .filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)))
+        .map((c) => toCredit(c, "Director"))
+        .sort(byYearDesc);
+
+      return NextResponse.json({
+        id: d.id,
+        name: d.name,
+        biography: d.biography || "",
+        profile: d.profile_path ?? null,
+        knownFor: d.known_for_department || "",
+        birthday: d.birthday ?? null,
+        deathday: d.deathday ?? null,
+        placeOfBirth: d.place_of_birth ?? null,
+        actingCredits,
+        directingCredits,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "unknown error";
+      return NextResponse.json({ error: `Lookup failed: ${message}` }, { status: 502 });
+    }
+  }
+
+  // Discover-list branch: curated browse rows for the public home page. Each
+  // key maps to a TMDB collection; movie lists come back as trimmed cards and
+  // the people list as {id,name,profile,knownFor}. No auth required.
+  const list = url.searchParams.get("list")?.trim();
+  if (list) {
+    const MOVIE_LISTS: Record<string, string> = {
+      now_playing: "/movie/now_playing?page=1",
+      trending: "/trending/movie/week?page=1",
+      top_rated: "/movie/top_rated?page=1",
+      popular: "/movie/popular?page=1",
+      upcoming: "/movie/upcoming?page=1",
+    };
+    const isPeople = list === "popular_people";
+    const path = isPeople ? "/person/popular?page=1" : MOVIE_LISTS[list];
+    if (!path) {
+      return NextResponse.json({ error: `Unknown list "${list}".` }, { status: 400 });
+    }
+    try {
+      const res = await fetch(`${TMDB}${path}`, { headers });
+      if (!res.ok) return statusError(res.status);
+      const data = await res.json();
+
+      if (isPeople) {
+        interface TmdbPerson {
+          id: number;
+          name: string;
+          profile_path?: string | null;
+          known_for_department?: string;
+          known_for?: { title?: string; name?: string }[];
+        }
+        const results = ((data.results || []) as TmdbPerson[])
+          .filter((p) => p.profile_path) // skip faceless entries — cards need a photo
+          .slice(0, 16)
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            profile: p.profile_path ?? null,
+            knownFor: p.known_for_department || "",
+            knownForTitles: (p.known_for || [])
+              .map((k) => k.title || k.name || "")
+              .filter(Boolean)
+              .slice(0, 3),
+          }));
+        return NextResponse.json({ kind: "people", results });
+      }
+
+      const results = ((data.results || []) as TmdbApiResult[])
+        .filter((r) => r.poster_path)
+        .slice(0, 18)
+        .map((r) => ({
+          id: r.id,
+          title: r.title,
+          year: yearOf(r.release_date),
+          poster: r.poster_path ?? null,
+          rating: round1(r.vote_average),
+          genre: firstGenre(r.genre_ids),
+        }));
+      return NextResponse.json({ kind: "movies", results });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "unknown error";
+      return NextResponse.json({ error: `List failed: ${message}` }, { status: 502 });
     }
   }
 

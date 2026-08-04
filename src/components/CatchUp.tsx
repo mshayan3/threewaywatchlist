@@ -160,7 +160,7 @@ export default function CatchUp({ user, personal }: { user: AppUser; personal: P
               : "Once the film catalog is built, popular and taste-matched picks show up here."}
           </p>
           <Link
-            href="/home"
+            href="/"
             className="mt-1 rounded-[10px] bg-accent px-5 py-3 text-[14px] font-bold text-accent-text transition-transform active:scale-95"
           >
             Back to home

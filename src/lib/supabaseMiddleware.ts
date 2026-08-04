@@ -35,25 +35,27 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+  // Personal / social surfaces stay gated. The home ("/"), search, and the
+  // movie / person detail pages are public so signed-out visitors can browse.
   const isProtected =
     path.startsWith("/dashboard") ||
-    path.startsWith("/home") ||
     path.startsWith("/catch-up") ||
     path.startsWith("/watchlist") ||
     path.startsWith("/watched") ||
-    path.startsWith("/search") ||
     path.startsWith("/groups") ||
     path.startsWith("/profile");
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    // Preserve where they were headed so login can send them back.
+    url.searchParams.set("next", path + request.nextUrl.search);
     return NextResponse.redirect(url);
   }
 
   if (user && path === "/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/home";
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 

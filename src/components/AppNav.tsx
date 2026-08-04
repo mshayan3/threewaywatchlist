@@ -27,7 +27,7 @@ type NavItem = {
 };
 
 const NAV: NavItem[] = [
-  { href: "/home", label: "Home", Icon: HomeIcon, match: (p) => p === "/home" || p.startsWith("/dashboard") },
+  { href: "/", label: "Home", Icon: HomeIcon, match: (p) => p === "/" || p.startsWith("/dashboard") },
   { href: "/catch-up", label: "Catch up", Icon: SparklesIcon, match: (p) => p.startsWith("/catch-up") },
   { href: "/search", label: "Search", Icon: SearchIcon, match: (p) => p.startsWith("/search") },
   { href: "/watchlist", label: "Watchlist", Icon: BookmarkIcon, match: (p) => p.startsWith("/watchlist") },
@@ -91,22 +91,15 @@ export function AppSidebar({
   return (
     <aside className="hidden w-[288px] flex-none flex-col gap-1 border-r border-line bg-bar px-3 py-4 lg:flex lg:sticky lg:top-0 lg:h-screen lg:self-start">
       <Link
-        href="/home"
+        href="/"
         className="px-2 pb-3 pt-1 font-display text-[18px] font-bold tracking-[-0.02em]"
       >
         Threeway Watchlist
       </Link>
 
-      {/* Permanent, fully-functional search field (inline results + Add). Falls
-          back to a static link only during the signed-out/loading shell. */}
-      {user ? (
-        <SidebarSearch user={user} />
-      ) : (
-        <span className="mb-1.5 flex h-10 items-center gap-2.5 rounded-[10px] border border-border bg-input px-3 text-[14px] font-medium text-faint">
-          <SearchIcon className="h-[18px] w-[18px]" />
-          Search films…
-        </span>
-      )}
+      {/* Permanent, fully-functional search field (inline results + Add).
+          Available to everyone — for signed-out visitors, Add prompts sign in. */}
+      <SidebarSearch user={user} />
 
       <nav className="flex flex-col gap-0.5">
         {NAV.filter((n) => n.href !== "/search").map(({ href, label, Icon, match }) => {
@@ -130,7 +123,7 @@ export function AppSidebar({
         })}
       </nav>
 
-      {user && (
+      {user ? (
         <div className="mt-auto flex items-center gap-2.5 border-t border-line pt-3">
           <Link
             href="/profile"
@@ -156,6 +149,16 @@ export function AppSidebar({
             </svg>
           </button>
         </div>
+      ) : (
+        <div className="mt-auto flex items-center gap-2.5 border-t border-line pt-3">
+          <Link
+            href="/login"
+            className="flex-1 rounded-[10px] bg-accent px-3 py-2.5 text-center text-[14px] font-bold text-accent-text transition-transform active:scale-[.98]"
+          >
+            Sign in
+          </Link>
+          <ThemeToggle />
+        </div>
       )}
     </aside>
   );
@@ -179,9 +182,16 @@ export function MobileHeader({
       </span>
       <div className="flex flex-none items-center gap-2">
         <ThemeToggle />
-        {user && (
+        {user ? (
           <Link href="/profile" aria-label="Your profile" className="active:scale-95">
             <Avatar user={user} size={34} />
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-bold text-accent-text active:scale-95"
+          >
+            Sign in
           </Link>
         )}
       </div>

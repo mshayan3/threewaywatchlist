@@ -1,24 +1,17 @@
 "use client";
 
-import { usePersonalPage } from "@/lib/usePersonalPage";
+import { usePublicPage } from "@/lib/usePublicPage";
 import AppShell from "@/components/AppShell";
 import SearchView from "@/components/SearchView";
-import Spinner from "@/components/Spinner";
 
+// Public search page — the mobile Search tab and desktop deep-link. Anyone can
+// search; SearchView gates the Add action to sign-in when signed out.
 export default function SearchPage() {
-  const { user, loading, personal, signOut } = usePersonalPage();
-
-  if (loading || !user) {
-    return (
-      <AppShell user={null} onSignOut={signOut}>
-        <Spinner />
-      </AppShell>
-    );
-  }
+  const { user, signOut } = usePublicPage();
 
   return (
     <AppShell user={user} onSignOut={signOut}>
-      <SearchView personal={personal} />
+      <SearchView user={user} />
     </AppShell>
   );
 }

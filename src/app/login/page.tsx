@@ -6,20 +6,39 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import ThemeToggle from "@/components/ThemeToggle";
 
-type EmailMode = "password" | "magic";
 type Msg = { text: string; kind: "err" | "ok" } | null;
+
+// Multi-color Google "G" mark (official brand colors).
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M23.52 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.88c2.27-2.09 3.57-5.17 3.57-8.87z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.76-2.11-6.7-4.94H1.29v3.09A12 12 0 0 0 12 24z" />
+      <path fill="#FBBC05" d="M5.3 14.31A7.2 7.2 0 0 1 4.92 12c0-.8.14-1.58.38-2.31V6.6H1.29A12 12 0 0 0 0 12c0 1.94.46 3.77 1.29 5.4l4.01-3.09z" />
+      <path fill="#EA4335" d="M12 4.75c1.76 0 3.34.61 4.58 1.8l3.44-3.44C17.95 1.18 15.24 0 12 0A12 12 0 0 0 1.29 6.6l4.01 3.09C6.24 6.86 8.88 4.75 12 4.75z" />
+    </svg>
+  );
+}
+
+// Apple logo.
+function AppleIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.05 12.04c-.03-2.6 2.13-3.85 2.23-3.91-1.22-1.78-3.11-2.02-3.78-2.05-1.61-.16-3.14.95-3.96.95-.81 0-2.07-.93-3.4-.9-1.75.03-3.36 1.02-4.26 2.58-1.82 3.16-.47 7.83 1.3 10.4.86 1.25 1.89 2.66 3.24 2.61 1.3-.05 1.79-.84 3.36-.84 1.57 0 2.01.84 3.39.81 1.4-.02 2.29-1.28 3.15-2.54.99-1.46 1.4-2.87 1.42-2.94-.03-.01-2.73-1.05-2.76-4.16zM14.6 4.32c.72-.87 1.2-2.08 1.07-3.28-1.03.04-2.28.69-3.02 1.56-.66.77-1.24 2-1.08 3.18 1.15.09 2.32-.59 3.03-1.46z" />
+    </svg>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<EmailMode>("password");
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
-  // Where to land after auth — carries an invite link (/join/<token>) through
-  // sign-in so a shared link still works for signed-out visitors.
-  const [next, setNext] = useState("/home");
+  // Where to land after auth — carries an invite link (/join/<token>) or a
+  // gated page through sign-in so the visitor returns where they intended.
+  const [next, setNext] = useState("/");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -52,24 +71,12 @@ export default function LoginPage() {
   async function submitEmail() {
     const mail = email.trim();
     if (!mail) return setMsg({ text: "Enter your email.", kind: "err" });
+    if (password.length < 6) {
+      return setMsg({ text: "Password should be at least 6 characters.", kind: "err" });
+    }
 
     setBusy(true);
     setMsg(null);
-
-    if (mode === "magic") {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: mail,
-        options: { emailRedirectTo: callbackUrl() },
-      });
-      setBusy(false);
-      if (error) return setMsg({ text: error.message, kind: "err" });
-      return setMsg({ text: "Check your email for a sign-in link.", kind: "ok" });
-    }
-
-    if (password.length < 6) {
-      setBusy(false);
-      return setMsg({ text: "Password should be at least 6 characters.", kind: "err" });
-    }
 
     if (isSignUp) {
       const { data, error } = await supabase.auth.signUp({
@@ -89,7 +96,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: mail, password });
     setBusy(false);
     if (error) return setMsg({ text: error.message, kind: "err" });
-    router.push("/home");
+    router.push(next);
   }
 
   async function forgotPassword() {
@@ -106,7 +113,10 @@ export default function LoginPage() {
   }
 
   const inputCls =
-    "w-full rounded-[14px] border border-border bg-input px-[15px] py-[13px] text-[14.5px] text-text outline-none transition-colors focus:border-accent";
+    "w-full rounded-[14px] border border-border bg-input px-[15px] py-[13px] text-[14.5px] text-text outline-none transition-colors focus:border-accent2";
+
+  const oauthBtn =
+    "flex w-full items-center justify-center gap-2.5 rounded-[14px] py-[13px] text-[14.5px] font-semibold transition-colors disabled:opacity-55";
 
   return (
     <div className="min-h-screen">
@@ -129,27 +139,27 @@ export default function LoginPage() {
             {isSignUp ? "Create your account ✨" : "Welcome back 👋"}
           </h1>
           <p className="m-0 mb-6 text-[14.5px] text-dim">
-            Sign in to reach your watchlist and groups.
+            {isSignUp
+              ? "Save films and pool a watchlist with friends."
+              : "Sign in to reach your watchlist and groups."}
           </p>
 
+          {/* Google — white button reads clearly in both themes */}
           <button
             onClick={() => oauth("google")}
             disabled={busy}
-            className="mb-[11px] flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-border bg-chip py-[13px] text-[14.5px] font-bold text-text transition-colors hover:border-accent disabled:opacity-55"
+            className={oauthBtn + " mb-[11px] border border-[#dadce0] bg-white text-[#1f1f1f] hover:bg-[#f7f8f8]"}
           >
-            <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-white text-[12px] font-extrabold text-[#4285F4]">
-              G
-            </span>
+            <GoogleIcon />
             Continue with Google
           </button>
+          {/* Apple — black button, hairline border so it separates from a dark surface */}
           <button
             onClick={() => oauth("apple")}
             disabled={busy}
-            className="flex w-full items-center justify-center gap-2.5 rounded-[14px] bg-black py-[13px] text-[14.5px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-55"
+            className={oauthBtn + " border border-white/15 bg-black text-white hover:bg-[#1a1a1a]"}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M16.365 1.43c0 1.14-.417 2.2-1.11 3-.79.905-2.08 1.6-3.15 1.52-.14-1.13.42-2.31 1.06-3.05.78-.9 2.16-1.55 3.2-1.47zM20.5 17.2c-.6 1.38-.88 1.99-1.66 3.2-1.08 1.68-2.6 3.77-4.48 3.79-1.67.01-2.1-1.09-4.37-1.08-2.27.01-2.74 1.1-4.41 1.09-1.88-.02-3.32-1.9-4.4-3.58C-1.34 16.36-1.6 10.6.7 7.6c1.13-1.47 2.9-2.4 4.55-2.4 1.68 0 2.74 1.1 4.13 1.1 1.35 0 2.17-1.1 4.11-1.1 1.46 0 3.01.8 4.11 2.17-3.62 1.98-3.03 7.15.79 7.83z" />
-            </svg>
+            <AppleIcon />
             Continue with Apple
           </button>
 
@@ -170,62 +180,46 @@ export default function LoginPage() {
             onKeyDown={(e) => e.key === "Enter" && submitEmail()}
           />
 
-          {mode === "password" && (
-            <>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-[13px] font-bold">Password</label>
-                {!isSignUp && (
-                  <button
-                    type="button"
-                    onClick={forgotPassword}
-                    className="text-[12.5px] font-medium text-text hover:underline"
-                  >
-                    Forgot?
-                  </button>
-                )}
-              </div>
-              <input
-                className={inputCls + " mb-5"}
-                type="password"
-                placeholder={isSignUp ? "Create a password" : "••••••••"}
-                autoComplete={isSignUp ? "new-password" : "current-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submitEmail()}
-              />
-            </>
-          )}
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className="text-[13px] font-bold">Password</label>
+            {!isSignUp && (
+              <button
+                type="button"
+                onClick={forgotPassword}
+                className="text-[12.5px] font-semibold text-accent2 hover:underline"
+              >
+                Forgot?
+              </button>
+            )}
+          </div>
+          <input
+            className={inputCls + " mb-5"}
+            type="password"
+            placeholder={isSignUp ? "Create a password" : "••••••••"}
+            autoComplete={isSignUp ? "new-password" : "current-password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submitEmail()}
+          />
 
           <button
             onClick={submitEmail}
             disabled={busy}
             className="w-full rounded-[14px] bg-accent py-[14px] text-[15px] font-bold text-accent-text transition-transform active:scale-[.98] disabled:opacity-55"
           >
-            {mode === "magic" ? "Send magic link" : isSignUp ? "Create account" : "Sign in"}
+            {isSignUp ? "Create account" : "Sign in"}
           </button>
 
           <button
             type="button"
             onClick={() => {
-              setMode((m) => (m === "password" ? "magic" : "password"));
+              setIsSignUp((s) => !s);
               setMsg(null);
             }}
-            className="mt-4 block w-full text-center text-[13px] font-medium text-dim hover:text-text"
+            className="mt-4 block w-full text-center text-[13.5px] font-semibold text-dim hover:text-text"
           >
-            {mode === "password" ? "Email me a magic link instead" : "Use a password instead"}
+            {isSignUp ? "Already have an account? Sign in" : "New here? Create an account"}
           </button>
-          {mode === "password" && (
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp((s) => !s);
-                setMsg(null);
-              }}
-              className="mt-1.5 block w-full text-center text-[13.5px] font-bold text-text hover:underline"
-            >
-              {isSignUp ? "Already have an account? Sign in" : "New here? Create an account"}
-            </button>
-          )}
 
           {msg && (
             <p

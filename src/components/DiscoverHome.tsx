@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import SearchBar from "./SearchBar";
 import { usePersonalLists } from "@/lib/usePersonalLists";
 import { fetchList, prefetchMovieDetail, prefetchPersonDetail } from "@/lib/tmdb";
-import { initials, posterGradient } from "@/lib/helpers";
+import { initials, isUnreleased, posterGradient } from "@/lib/helpers";
 import type { AppUser, DiscoverList, DiscoverMovie, DiscoverPerson } from "@/lib/types";
 
 // Movie browse rows shown to everyone, in order. People get their own row type.
@@ -26,6 +26,7 @@ const posterUrl = (p: string | null, size = "w342") =>
 
 function MoviePosterCard({ movie }: { movie: DiscoverMovie }) {
   const src = posterUrl(movie.poster);
+  const unreleased = isUnreleased(movie.releaseDate);
   const meta = [movie.year, movie.genre].filter(Boolean).join(" · ");
   return (
     <Link
@@ -56,6 +57,14 @@ function MoviePosterCard({ movie }: { movie: DiscoverMovie }) {
             style={{ background: "var(--overlay)" }}
           >
             <span className="text-amber">★</span> {movie.rating.toFixed(1)}
+          </div>
+        )}
+        {unreleased && (
+          <div
+            className="absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-[#f4eedf]"
+            style={{ background: "var(--overlay)" }}
+          >
+            Unreleased
           </div>
         )}
       </div>

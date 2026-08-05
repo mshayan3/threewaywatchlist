@@ -322,6 +322,7 @@ export async function GET(request: Request) {
           id: r.id,
           title: r.title,
           year: yearOf(r.release_date),
+          releaseDate: r.release_date || "",
           poster: r.poster_path ?? null,
           rating: round1(r.vote_average),
           genre: firstGenres(r.genre_ids),

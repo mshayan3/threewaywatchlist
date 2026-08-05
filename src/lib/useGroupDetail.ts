@@ -7,7 +7,7 @@ import { useToast } from "@/components/Toast";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { useAuthUser } from "@/lib/useAuthUser";
 import { usePersonalLists } from "@/lib/usePersonalLists";
-import type { Group, GroupMovie, Member } from "@/lib/types";
+import type { Group, GroupMovie, GroupWatchedMovie, Member, MoviePerson } from "@/lib/types";
 
 const GROUP_POLL_MS = 15000;
 
@@ -20,6 +20,17 @@ type GmRow = {
   genre: string | null;
   queued_by: { user_id: string; name: string | null; avatar_url: string | null }[] | null;
   watched_by: { user_id: string; name: string | null; avatar_url: string | null }[] | null;
+};
+
+type GwRow = {
+  tmdb_id: number;
+  title: string;
+  year: string | null;
+  poster: string | null;
+  rating: number | null;
+  genre: string | null;
+  watched_at: string;
+  marked_by: MoviePerson | null;
 };
 
 type ProfileLite = {
@@ -45,19 +56,21 @@ export function useGroupDetail(code: string | null, onExit?: () => void) {
 
   const [group, setGroup] = useState<Group | null>(null);
   const [movies, setMovies] = useState<GroupMovie[]>([]);
+  const [watchedTogether, setWatchedTogether] = useState<GroupWatchedMovie[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [stale, setStale] = useState(false);
   const [resolving, setResolving] = useState(true);
 
   const loadGroupMovies = useCallback(async () => {
     if (!code) return;
-    const [gmRes, memRes] = await Promise.all([
+    const [gmRes, gwRes, memRes] = await Promise.all([
       supabase.rpc("group_movies", { p_code: code }),
+      supabase.rpc("group_watched_movies", { p_code: code }),
       supabase.from("group_members").select("user_id,user_name").eq("group_code", code),
     ]);
-    if (gmRes.error || memRes.error) {
+    if (gmRes.error || gwRes.error || memRes.error) {
       setStale(true);
-      toast("Couldn't refresh the group: " + (gmRes.error || memRes.error)!.message);
+      toast("Couldn't refresh the group: " + (gmRes.error || gwRes.error || memRes.error)!.message);
       return;
     }
 
@@ -93,6 +106,18 @@ export function useGroupDetail(code: string | null, onExit?: () => void) {
       watchedBy: r.watched_by || [],
     }));
     setMovies(mapped);
+    setWatchedTogether(
+      ((gwRes.data as GwRow[]) || []).map((r) => ({
+        tmdbId: r.tmdb_id,
+        title: r.title,
+        year: r.year || "",
+        poster: r.poster || "",
+        rating: r.rating ?? 0,
+        genre: r.genre || "",
+        watchedAt: r.watched_at,
+        markedBy: r.marked_by,
+      }))
+    );
     setStale(false);
   }, [code, toast]);
 
@@ -151,6 +176,11 @@ export function useGroupDetail(code: string | null, onExit?: () => void) {
         { event: "*", schema: "public", table: "group_members", filter: `group_code=eq.${code}` },
         () => loadGroupMovies()
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_watched", filter: `group_code=eq.${code}` },
+        () => loadGroupMovies()
+      )
       .subscribe((status: string) => {
         // Re-sync once live, so a membership change between the resolve effect's
         // initial load and this subscription connecting isn't missed.
@@ -199,6 +229,45 @@ export function useGroupDetail(code: string | null, onExit?: () => void) {
       loadGroupMovies();
     },
     [personal, loadGroupMovies]
+  );
+
+  // Log a film as watched together by the whole group. Any member may do it;
+  // it moves off the Common tab and onto Watched for everyone.
+  const onMarkWatchedTogether = useCallback(
+    async (m: GroupMovie) => {
+      if (!code) return;
+      const { data, error } = await supabase.rpc("mark_group_watched", {
+        p_code: code,
+        p_tmdb: m.tmdbId,
+        p_title: m.title,
+        p_year: m.year || null,
+        p_poster: m.poster || null,
+        p_rating: m.rating || null,
+        p_genre: m.genre || null,
+      });
+      if (error) return toast("Couldn't mark it watched: " + error.message);
+      if (data === "notmember") return toast("You're not a member of this group.");
+      toast(`Marked "${m.title}" as watched together`);
+      loadGroupMovies();
+    },
+    [code, toast, loadGroupMovies]
+  );
+
+  // Undo a watched-together entry — it flips back to Common if enough members
+  // still want it.
+  const onUnmarkWatchedTogether = useCallback(
+    async (m: GroupWatchedMovie) => {
+      if (!code) return;
+      const { data, error } = await supabase.rpc("unmark_group_watched", {
+        p_code: code,
+        p_tmdb: m.tmdbId,
+      });
+      if (error) return toast("Couldn't undo: " + error.message);
+      if (data === "notmember") return toast("You're not a member of this group.");
+      toast(`Moved "${m.title}" back to Common`);
+      loadGroupMovies();
+    },
+    [code, toast, loadGroupMovies]
   );
 
   // Owner-only: remove another member from the group. Their personal lists are
@@ -271,6 +340,7 @@ export function useGroupDetail(code: string | null, onExit?: () => void) {
     loading,
     group,
     movies,
+    watchedTogether,
     members,
     stale,
     resolving,
@@ -278,6 +348,8 @@ export function useGroupDetail(code: string | null, onExit?: () => void) {
     loadGroupMovies,
     onAddToMine,
     onRemoveFromMine,
+    onMarkWatchedTogether,
+    onUnmarkWatchedTogether,
     onRemoveMember,
     onLeave,
     onDelete,

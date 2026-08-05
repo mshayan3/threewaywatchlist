@@ -85,6 +85,20 @@ export interface GroupMovie {
   watchedBy: MoviePerson[];
 }
 
+// A film the group explicitly logged as watched TOGETHER (from the
+// group_watched_movies RPC). Distinct from a member's personal watched list:
+// this is a group-scoped fact with who marked it and when.
+export interface GroupWatchedMovie {
+  tmdbId: number;
+  title: string;
+  year: string;
+  poster: string;
+  rating: number;
+  genre: string;
+  watchedAt: string;
+  markedBy: MoviePerson | null;
+}
+
 // A TMDB search result (subset of fields we use). rating + genre are resolved
 // server-side in /api/tmdb from vote_average + genre_ids.
 export interface TmdbResult {
@@ -147,6 +161,7 @@ export interface DiscoverMovie {
   id: number;
   title: string;
   year: string;
+  releaseDate: string; // raw TMDB release_date; "" when unknown
   poster: string | null;
   rating: number;
   genre: string;

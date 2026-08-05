@@ -8,11 +8,12 @@ import SortMenu from "./SortMenu";
 import { FilterChip } from "./ListChrome";
 import { useToast } from "./Toast";
 import { colorFor, genreFacets, initials, inviteUrl, splitGenres } from "@/lib/helpers";
-import type { Group, GroupMovie, Member } from "@/lib/types";
+import type { Group, GroupMovie, GroupWatchedMovie, Member } from "@/lib/types";
 
 interface GroupViewProps {
   group: Group;
   movies: GroupMovie[];
+  watchedTogether: GroupWatchedMovie[];
   members: Member[];
   myUserId?: string;
   stale?: boolean;
@@ -26,10 +27,16 @@ interface GroupViewProps {
   onRetry: () => void;
   onAddToMine: (m: GroupMovie) => void;
   onRemoveFromMine: (m: GroupMovie) => void;
+  onMarkWatchedTogether: (m: GroupMovie) => void;
+  onUnmarkWatchedTogether: (m: GroupWatchedMovie) => void;
   onRemoveMember: (m: Member) => void;
   onLeave: () => void;
   onDelete: () => void;
 }
+
+// A movie must be on at least this many members' watchlists to count as
+// "common" — the group's shared want-to-watch. ("more than 1 person")
+const MIN_COMMON = 2;
 
 const byTitle = (a: GroupMovie, b: GroupMovie) => a.title.localeCompare(b.title);
 // Triage: most-wanted first (more members queuing it), then alphabetical.
@@ -38,23 +45,23 @@ const byDemand = (a: GroupMovie, b: GroupMovie) =>
 // Highest TMDB rating first, then alphabetical.
 const byRating = (a: GroupMovie, b: GroupMovie) =>
   (b.rating || 0) - (a.rating || 0) || a.title.localeCompare(b.title);
-const nobodyWatched = (m: GroupMovie) => m.watchedBy.length === 0;
 
 type View = "common" | "watched";
-type Sort = "demand" | "rating" | "title";
-const SORTERS: Record<Sort, (a: GroupMovie, b: GroupMovie) => number> = {
+type Sort = "demand" | "rating" | "title" | "recent";
+const SORTERS: Record<"demand" | "rating" | "title", (a: GroupMovie, b: GroupMovie) => number> = {
   demand: byDemand,
   rating: byRating,
   title: byTitle,
 };
 // The Common tab can triage by demand; the Watched tab can't (nobody's queued),
-// so it drops that option.
+// so it offers recency instead.
 const COMMON_SORTS = [
   { value: "demand" as Sort, label: "Most wanted" },
   { value: "rating" as Sort, label: "Rating" },
   { value: "title" as Sort, label: "A–Z" },
 ];
 const WATCHED_SORTS = [
+  { value: "recent" as Sort, label: "Recently watched" },
   { value: "rating" as Sort, label: "Rating" },
   { value: "title" as Sort, label: "A–Z" },
 ];
@@ -62,6 +69,7 @@ const WATCHED_SORTS = [
 export default function GroupView({
   group,
   movies,
+  watchedTogether,
   members,
   myUserId,
   stale,
@@ -73,13 +81,15 @@ export default function GroupView({
   onRetry,
   onAddToMine,
   onRemoveFromMine,
+  onMarkWatchedTogether,
+  onUnmarkWatchedTogether,
   onRemoveMember,
   onLeave,
   onDelete,
 }: GroupViewProps) {
   const [view, setView] = useState<View>("common");
   const [commonSort, setCommonSort] = useState<Sort>("demand");
-  const [watchedSort, setWatchedSort] = useState<Sort>("title");
+  const [watchedSort, setWatchedSort] = useState<Sort>("recent");
   const [genre, setGenre] = useState<string>("all");
   const [menuOpen, setMenuOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
@@ -107,14 +117,52 @@ export default function GroupView({
     return () => document.removeEventListener("click", onDoc);
   }, []);
 
+  // Films the group has logged as watched together — keyed for quick lookup so
+  // Common can exclude them, plus a watched_at map for the "recent" sort/label.
+  const watchedIds = useMemo(
+    () => new Set(watchedTogether.map((m) => m.tmdbId)),
+    [watchedTogether]
+  );
+  const watchedAtById = useMemo(
+    () => new Map(watchedTogether.map((m) => [m.tmdbId, m.watchedAt])),
+    [watchedTogether]
+  );
+  // Reshape the watched-together rows as GroupMovies so they flow through the
+  // same card / genre-facet / sort machinery. watchedBy carries who logged it.
+  const watchedAsMovies = useMemo<GroupMovie[]>(
+    () =>
+      watchedTogether.map((m) => ({
+        tmdbId: m.tmdbId,
+        title: m.title,
+        year: m.year,
+        poster: m.poster,
+        rating: m.rating,
+        genre: m.genre,
+        queuedBy: [],
+        watchedBy: m.markedBy ? [m.markedBy] : [],
+      })),
+    [watchedTogether]
+  );
+
+  // Common = a film on 2+ members' watchlists that the group hasn't logged as
+  // watched together yet. (An individual member having seen it no longer hides
+  // it — only an explicit group watch does.)
   const common = useMemo(
-    () => movies.filter(nobodyWatched).sort(SORTERS[commonSort]),
-    [movies, commonSort]
+    () =>
+      movies
+        .filter((m) => m.queuedBy.length >= MIN_COMMON && !watchedIds.has(m.tmdbId))
+        .sort(SORTERS[commonSort as "demand" | "rating" | "title"]),
+    [movies, commonSort, watchedIds]
   );
-  const watched = useMemo(
-    () => movies.filter((m) => !nobodyWatched(m)).sort(SORTERS[watchedSort]),
-    [movies, watchedSort]
-  );
+  const watched = useMemo(() => {
+    const list = [...watchedAsMovies];
+    if (watchedSort === "recent") {
+      return list.sort((a, b) =>
+        (watchedAtById.get(b.tmdbId) || "").localeCompare(watchedAtById.get(a.tmdbId) || "")
+      );
+    }
+    return list.sort(SORTERS[watchedSort]);
+  }, [watchedAsMovies, watchedSort, watchedAtById]);
   const activeAll = view === "common" ? common : watched;
 
   // Genre filter facets for the active tab, most-common first. Applied after the
@@ -163,17 +211,72 @@ export default function GroupView({
         </button>
       )}
 
-      <div className="mb-1.5 flex flex-wrap items-start justify-between gap-5">
-        <div className="flex min-w-0 items-center gap-4">
+      <div className="mb-1.5 flex flex-wrap items-start justify-between gap-x-5 gap-y-4">
+        <div className="flex min-w-0 items-start gap-4">
           <span
             className="grid h-[60px] w-[60px] flex-none place-items-center rounded-[16px] font-display text-[27px] font-bold text-white"
             style={{ background: colorFor(group.name || group.code) }}
           >
             {initials(group.name || group.code)}
           </span>
-          <h1 className="m-0 font-display text-[clamp(24px,4vw,34px)] font-semibold tracking-[-0.02em] [overflow-wrap:anywhere]">
-            {group.name || group.code}
-          </h1>
+          <div className="min-w-0">
+            <h1 className="m-0 font-display text-[clamp(24px,4vw,34px)] font-semibold tracking-[-0.02em] [overflow-wrap:anywhere]">
+              {group.name || group.code}
+            </h1>
+            {ordered.length > 0 && (
+              <button
+                type="button"
+                aria-expanded={membersOpen}
+                title={membersOpen ? "Hide members" : "Show members"}
+                onClick={() => setMembersOpen((o) => !o)}
+                className="mt-2 flex max-w-full items-center gap-2 rounded-full text-left transition-opacity hover:opacity-80"
+              >
+                <span className="flex">
+                  {ordered.slice(0, 5).map((m) => {
+                    const label = m.name || m.user_name;
+                    return (
+                      <span
+                        key={m.user_id}
+                        title={label || "…"}
+                        className="-ml-2 grid h-[28px] w-[28px] flex-none place-items-center overflow-hidden rounded-full border-2 border-frame text-[10.5px] font-bold text-white first:ml-0"
+                        style={m.avatar_url ? undefined : { background: colorFor(label) }}
+                      >
+                        {m.avatar_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={m.avatar_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          initials(label)
+                        )}
+                      </span>
+                    );
+                  })}
+                </span>
+                <span className="min-w-0 truncate text-[13.5px] font-medium text-faint">
+                  {memberSummary(ordered, myUserId)}
+                </span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                  className={"flex-none text-faint transition-transform " + (membersOpen ? "rotate-180" : "")}
+                >
+                  <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={pickTonight}
+            disabled={common.length === 0}
+            className="flex-none rounded-[10px] bg-accent px-4 py-2.5 text-[13.5px] font-bold text-accent-text transition-transform active:scale-95 disabled:opacity-45"
+          >
+            Pick tonight →
+          </button>
           <div className="relative" ref={menuRef}>
             <button
               type="button"
@@ -184,7 +287,7 @@ export default function GroupView({
                 e.stopPropagation();
                 setMenuOpen((o) => !o);
               }}
-              className="grid h-[30px] w-[30px] place-items-center rounded-[8px] border border-border text-faint transition-colors hover:text-text"
+              className="grid h-[38px] w-[38px] place-items-center rounded-[10px] border border-border text-faint transition-colors hover:text-text"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" />
@@ -193,7 +296,7 @@ export default function GroupView({
             {menuOpen && (
               <div
                 role="menu"
-                className="absolute left-0 top-[calc(100%+6px)] z-30 flex min-w-[180px] flex-col rounded-[var(--radius-sm)] border border-border bg-surface p-1.5"
+                className="absolute right-0 top-[calc(100%+6px)] z-30 flex min-w-[180px] flex-col rounded-[var(--radius-sm)] border border-border bg-surface p-1.5"
                 style={{ boxShadow: "var(--card-shadow-hover)" }}
               >
                 {group.inviteToken && (
@@ -201,9 +304,6 @@ export default function GroupView({
                     Copy invite link
                   </MenuItem>
                 )}
-                <MenuItem onClick={() => { setMenuOpen(false); setMembersOpen((o) => !o); }}>
-                  {membersOpen ? "Hide members" : "Members"}
-                </MenuItem>
                 <MenuItem onClick={() => { setMenuOpen(false); onLeave(); }}>Leave group</MenuItem>
                 {group.isOwner && (
                   <MenuItem danger onClick={() => { setMenuOpen(false); onDelete(); }}>
@@ -213,41 +313,6 @@ export default function GroupView({
               </div>
             )}
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex">
-            {ordered.slice(0, 5).map((m) => {
-              const label = m.name || m.user_name;
-              return (
-                <span
-                  key={m.user_id}
-                  title={label || "…"}
-                  className="-ml-2 grid h-[30px] w-[30px] flex-none place-items-center overflow-hidden rounded-full border-2 border-frame text-[11px] font-bold text-white first:ml-0"
-                  style={m.avatar_url ? undefined : { background: colorFor(label) }}
-                >
-                  {m.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.avatar_url} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    initials(label)
-                  )}
-                </span>
-              );
-            })}
-          </div>
-          {ordered.length > 0 && (
-            <span className="text-[13.5px] font-medium text-faint">
-              {memberSummary(ordered, myUserId)}
-            </span>
-          )}
-          <button
-            onClick={pickTonight}
-            disabled={common.length === 0}
-            className="flex-none rounded-[10px] bg-accent px-4 py-2.5 text-[13.5px] font-bold text-accent-text transition-transform active:scale-95 disabled:opacity-45"
-          >
-            Pick tonight →
-          </button>
         </div>
       </div>
 
@@ -291,8 +356,9 @@ export default function GroupView({
       )}
 
       <p className="mb-8 mt-4 max-w-[560px] text-[15px] leading-[1.55] text-dim">
-        Pulled from everyone&apos;s watchlists, minus anything a member&apos;s already seen.
-        Whatever&apos;s left is fair game for movie night.
+        <b className="font-semibold text-text">Common</b> is what 2+ of you have on your
+        watchlists — fair game for movie night. Mark one <b className="font-semibold text-text">watched
+        together</b> after you see it and it moves to <b className="font-semibold text-text">Watched</b>.
       </p>
 
       {stale && (
@@ -393,8 +459,18 @@ export default function GroupView({
               iWatched={myWatchedIds.has(m.tmdbId)}
               watchCount={myWatchCounts.get(m.tmdbId) ?? 0}
               myUserId={myUserId}
+              watchedAt={view === "watched" ? watchedAtById.get(m.tmdbId) : undefined}
               onAddToMine={onAddToMine}
               onRemoveFromMine={onRemoveFromMine}
+              onMarkWatched={view === "common" ? onMarkWatchedTogether : undefined}
+              onUnmarkWatched={
+                view === "watched"
+                  ? (gm) => {
+                      const w = watchedTogether.find((x) => x.tmdbId === gm.tmdbId);
+                      if (w) onUnmarkWatchedTogether(w);
+                    }
+                  : undefined
+              }
             />
           ))}
         </MovieGrid>
@@ -403,8 +479,8 @@ export default function GroupView({
           {activeGenre !== "all"
             ? `No ${activeGenre} films on this tab.`
             : view === "common"
-              ? "Nothing to watch together yet — members can add movies from their dashboards."
-              : "No movies have been watched by anyone in the group yet."}
+              ? "Nothing you can watch together yet — a film shows here once 2+ members have it on their watchlists."
+              : "No movies logged as watched together yet — mark one from the Common tab after your movie night."}
         </p>
       )}
     </div>

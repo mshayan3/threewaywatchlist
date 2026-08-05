@@ -5,11 +5,98 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { fetchMovieDetail, prefetchPersonDetail } from "@/lib/tmdb";
-import { initials, posterGradient } from "@/lib/helpers";
+import { initials, isUnreleased, posterGradient } from "@/lib/helpers";
 import Spinner from "@/components/Spinner";
 import { useConfirm } from "@/components/ConfirmDialog";
 import { usePersonalLists } from "@/lib/usePersonalLists";
-import type { AppUser, MovieDetail, PersonalMovie, TmdbResult } from "@/lib/types";
+import type { AppUser, MovieDetail, PersonalMovie, TmdbResult, Verdict } from "@/lib/types";
+
+// Personal good/ok/bad take — colors match PersonalMovieCard's verdict tokens.
+const VERDICTS: { key: Verdict; label: string; color: string; tint: string }[] = [
+  { key: "good", label: "Good", color: "#3fb950", tint: "rgba(63,185,80,.22)" },
+  { key: "ok", label: "Okay", color: "#e0a92b", tint: "rgba(224,169,43,.22)" },
+  { key: "bad", label: "Bad", color: "#e5534b", tint: "rgba(229,83,75,.22)" },
+];
+
+// Hero-styled verdict picker (white-on-backdrop) for a watched film. Shows the
+// caller's current rating and lets them change or clear it.
+function HeroVerdict({
+  value,
+  onChange,
+}: {
+  value: Verdict | null | undefined;
+  onChange: (v: Verdict | null) => void;
+}) {
+  return (
+    <div className="mt-5">
+      <div className="mb-1.5 text-[12.5px] font-semibold uppercase tracking-wide text-white/55">
+        Your rating
+      </div>
+      <div className="flex gap-2" role="group" aria-label="Your rating">
+        {VERDICTS.map((v) => {
+          const active = value === v.key;
+          return (
+            <button
+              key={v.key}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange(active ? null : v.key)}
+              className="rounded-[9px] border px-4 py-2 text-[13.5px] font-bold backdrop-blur-sm transition-colors"
+              style={
+                active
+                  ? { background: v.tint, color: "#fff", borderColor: v.color }
+                  : { background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.85)", borderColor: "rgba(255,255,255,.25)" }
+              }
+            >
+              {v.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Click-to-reveal wrapper hiding potential spoilers (overview / cast) until the
+// visitor opts in. Collapsed state shows a blurred teaser behind a reveal button.
+function SpoilerSection({
+  heading,
+  revealed,
+  onReveal,
+  className = "",
+  children,
+}: {
+  heading: string;
+  revealed: boolean;
+  onReveal: () => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={"mb-10 " + className}>
+      <div className="mb-2.5 flex items-center gap-3">
+        <h2 className="m-0 font-display text-[19px] font-semibold tracking-[-0.01em]">{heading}</h2>
+        {revealed && (
+          <span className="text-[12px] text-faint">spoilers shown</span>
+        )}
+      </div>
+      {revealed ? (
+        children
+      ) : (
+        <button
+          onClick={onReveal}
+          className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-dashed border-border py-6 text-[14px] font-semibold text-dim transition-colors hover:border-accent2 hover:text-text"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" strokeWidth="1.8" />
+            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+          </svg>
+          Show {heading.toLowerCase()} — may contain spoilers
+        </button>
+      )}
+    </section>
+  );
+}
 
 const img = (path: string | null, size: string) =>
   path ? `https://image.tmdb.org/t/p/${size}${path}` : "";
@@ -25,6 +112,14 @@ function formatRuntime(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return h ? `${h}h ${m}m` : `${m}m`;
+}
+
+// Human-friendly release date (e.g. "March 14, 2026"); falls back to the raw
+// string if TMDB hands us something unparseable.
+function fmtReleaseDate(d: string): string {
+  const date = new Date(d);
+  if (Number.isNaN(date.getTime())) return d;
+  return date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
 // A cast member tile — links through to that person's page.
@@ -67,10 +162,21 @@ export default function MovieDetailView({
   const confirmDialog = useConfirm();
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Spoilers stay hidden until the visitor opts in (reset per movie).
+  const [showOverview, setShowOverview] = useState(false);
+  const [showCast, setShowCast] = useState(false);
 
   // Safe with a null user: the hook returns empty sets and no-op mutations.
-  const { watchlistIds, watchedIds, add, markWatched, moveToWatchlist, removeFromWatchlist } =
-    usePersonalLists(user);
+  const {
+    watchedList,
+    watchlistIds,
+    watchedIds,
+    add,
+    markWatched,
+    moveToWatchlist,
+    removeFromWatchlist,
+    setVerdict,
+  } = usePersonalLists(user);
 
   // Signed-out visitors can view everything; list actions send them to sign in.
   const gate = (fn: () => void) => () => (user ? fn() : router.push("/login"));
@@ -79,6 +185,8 @@ export default function MovieDetailView({
     let alive = true;
     setMovie(null);
     setError(null);
+    setShowOverview(false);
+    setShowCast(false);
     fetchMovieDetail(id)
       .then((d) => alive && setMovie(d))
       .catch((e) => alive && setError(e instanceof Error ? e.message : "Failed to load"));
@@ -106,6 +214,13 @@ export default function MovieDetailView({
   const numId = movie.id;
   const isMine = watchlistIds.has(numId);
   const iWatched = watchedIds.has(numId);
+  const unreleased = isUnreleased(movie.releaseDate);
+  // The caller's personal good/ok/bad take, if they've watched it.
+  const myVerdict = watchedList.find((m) => m.tmdbId === numId)?.verdict ?? null;
+
+  // Store up to the top two genres so cards read consistently with search-added
+  // rows (the ?id= / search branches already emit two).
+  const topGenres = movie.genres.slice(0, 2).join(", ");
 
   const asResult = (): TmdbResult => ({
     id: movie.id,
@@ -113,7 +228,7 @@ export default function MovieDetailView({
     release_date: movie.releaseDate,
     poster_path: movie.poster,
     rating: movie.rating,
-    genre: movie.genres[0] || "",
+    genre: topGenres,
   });
   const asPersonal = (): PersonalMovie => ({
     tmdbId: movie.id,
@@ -121,7 +236,7 @@ export default function MovieDetailView({
     year: movie.year,
     poster: movie.poster || "",
     rating: movie.rating,
-    genre: movie.genres[0] || "",
+    genre: topGenres,
     at: "",
     watchCount: 0,
   });
@@ -223,6 +338,11 @@ export default function MovieDetailView({
               )}
 
               <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[13.5px] font-semibold text-white/85">
+                {unreleased && (
+                  <span className="inline-flex items-center rounded-full bg-white/15 px-2.5 py-1 text-[12px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                    Unreleased
+                  </span>
+                )}
                 {movie.rating > 0 && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-black/35 px-2.5 py-1 backdrop-blur-sm">
                     <span className="text-amber">★</span> {movie.rating.toFixed(1)}
@@ -270,49 +390,77 @@ export default function MovieDetailView({
               )}
 
               {/* Actions */}
-              <div className="mt-6 flex flex-wrap gap-2.5">
-                {iWatched ? (
-                  <>
-                    <span className="inline-flex items-center gap-1.5 rounded-[10px] bg-white/15 px-4 py-2.5 text-[14px] font-bold text-white backdrop-blur-sm">
-                      ✓ Watched
-                    </span>
-                    <button
-                      onClick={() => moveToWatchlist(asPersonal())}
-                      className="rounded-[10px] border border-white/25 px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-white/10"
-                    >
-                      Move to watchlist
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    {isMine ? (
-                      <button
-                        onClick={handleRemove}
-                        className="group/rm inline-flex items-center rounded-[10px] bg-white px-4 py-2.5 text-[14px] font-bold text-black transition-colors"
-                      >
-                        <span className="group-hover/rm:hidden">✓ On your watchlist</span>
-                        <span className="hidden group-hover/rm:inline">✕ Remove</span>
-                      </button>
+              {unreleased ? (
+                <div className="mt-6">
+                  <span className="inline-flex items-center gap-2 rounded-[10px] bg-black/35 px-4 py-2.5 text-[14px] font-bold text-white backdrop-blur-sm">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.9" />
+                      <path d="M12 7v5l3 2" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Not yet released
+                  </span>
+                  <p className="m-0 mt-2 text-[13px] text-white/65">
+                    {movie.releaseDate
+                      ? `Releases ${fmtReleaseDate(movie.releaseDate)}. `
+                      : ""}
+                    It can&apos;t be added to a watchlist until it&apos;s out.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-6 flex flex-wrap gap-2.5">
+                    {iWatched ? (
+                      <>
+                        <span className="inline-flex items-center gap-1.5 rounded-[10px] bg-white/15 px-4 py-2.5 text-[14px] font-bold text-white backdrop-blur-sm">
+                          ✓ Watched
+                        </span>
+                        <button
+                          onClick={() => moveToWatchlist(asPersonal())}
+                          className="rounded-[10px] border border-white/25 px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-white/10"
+                        >
+                          Move to watchlist
+                        </button>
+                      </>
                     ) : (
-                      <button
-                        onClick={gate(() => add(asResult()))}
-                        className="rounded-[10px] bg-white px-4 py-2.5 text-[14px] font-bold text-black transition-colors hover:bg-white/90"
-                      >
-                        + Add to watchlist
-                      </button>
+                      <>
+                        {isMine ? (
+                          <button
+                            onClick={handleRemove}
+                            className="group/rm inline-flex items-center rounded-[10px] bg-white px-4 py-2.5 text-[14px] font-bold text-black transition-colors"
+                          >
+                            <span className="group-hover/rm:hidden">✓ On your watchlist</span>
+                            <span className="hidden group-hover/rm:inline">✕ Remove</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={gate(() => add(asResult()))}
+                            className="rounded-[10px] bg-white px-4 py-2.5 text-[14px] font-bold text-black transition-colors hover:bg-white/90"
+                          >
+                            + Add to watchlist
+                          </button>
+                        )}
+                        <button
+                          onClick={gate(() => markWatched(asPersonal()))}
+                          className="inline-flex items-center gap-1.5 rounded-[10px] border border-white/25 px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-white/10"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          Mark watched
+                        </button>
+                      </>
                     )}
-                    <button
-                      onClick={gate(() => markWatched(asPersonal()))}
-                      className="inline-flex items-center gap-1.5 rounded-[10px] border border-white/25 px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-white/10"
-                    >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      Mark watched
-                    </button>
-                  </>
-                )}
-              </div>
+                  </div>
+
+                  {/* The caller's personal rating — only once they've watched it. */}
+                  {user && iWatched && (
+                    <HeroVerdict
+                      value={myVerdict}
+                      onChange={(v) => setVerdict(asPersonal(), v)}
+                    />
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -321,15 +469,13 @@ export default function MovieDetailView({
       {/* Body — positioned above the backdrop's bleed so text isn't overdrawn. */}
       <div className="relative z-[1] px-5 pb-4 pt-2 sm:px-8 lg:px-14">
         {movie.overview && (
-          <section className="mb-10 max-w-[720px]">
-            <h2 className="m-0 mb-2.5 font-display text-[19px] font-semibold tracking-[-0.01em]">Overview</h2>
+          <SpoilerSection heading="Overview" revealed={showOverview} onReveal={() => setShowOverview(true)} className="max-w-[720px]">
             <p className="m-0 text-[15px] leading-[1.7] text-dim">{movie.overview}</p>
-          </section>
+          </SpoilerSection>
         )}
 
         {movie.cast.length > 0 && (
-          <section className="mb-10">
-            <h2 className="m-0 mb-4 font-display text-[19px] font-semibold tracking-[-0.01em]">Top cast</h2>
+          <SpoilerSection heading="Top cast" revealed={showCast} onReveal={() => setShowCast(true)}>
             <ul className="grid list-none grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3 p-0">
               {movie.cast.map((c) => (
                 <li key={`${c.id}-${c.character}`}>
@@ -337,7 +483,7 @@ export default function MovieDetailView({
                 </li>
               ))}
             </ul>
-          </section>
+          </SpoilerSection>
         )}
 
         <a

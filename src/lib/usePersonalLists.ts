@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { parseYear } from "@/lib/helpers";
+import { parseYear, splitGenres } from "@/lib/helpers";
 import { fetchMovieMeta } from "@/lib/tmdb";
 import { useToast } from "@/components/Toast";
 import type { AppUser, PersonalMovie, TmdbResult, Verdict, WatchedRow, WatchlistRow } from "@/lib/types";
@@ -32,22 +32,27 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
   // back to the DB, and patch local state. Group cards pick the ratings up via
   // the group_movies RPC on their next refresh (onChange).
   const backfillMeta = useCallback(
-    async (items: { tmdbId: number; table: "watchlist" | "watched" }[]) => {
+    async (items: { tmdbId: number; table: "watchlist" | "watched"; rating: number; genre: string }[]) => {
       if (!user || items.length === 0) return;
       let changed = false;
       await Promise.all(
-        items.map(async ({ tmdbId, table }) => {
+        items.map(async ({ tmdbId, table, rating, genre }) => {
           const meta = await fetchMovieMeta(tmdbId);
           if (!meta || (meta.rating <= 0 && !meta.genre)) return;
+          // Prefer freshly-fetched values, but never regress to blanks.
+          const nextRating = meta.rating > 0 ? meta.rating : rating;
+          const nextGenre = meta.genre || genre;
+          // Skip the write entirely when nothing actually improves — otherwise a
+          // genuinely single-genre film would re-UPDATE (and echo a realtime
+          // event → reload) on every dashboard load.
+          if (nextRating === rating && nextGenre === genre) return;
           await supabase
             .from(table)
-            .update({ rating: meta.rating, genre: meta.genre })
+            .update({ rating: nextRating, genre: nextGenre })
             .match({ user_id: user.id, tmdb_id: tmdbId });
           const patch = (arr: PersonalMovie[]) =>
             arr.map((m) =>
-              m.tmdbId === tmdbId
-                ? { ...m, rating: meta.rating || m.rating, genre: meta.genre || m.genre }
-                : m
+              m.tmdbId === tmdbId ? { ...m, rating: nextRating, genre: nextGenre } : m
             );
           setWatchlist(patch);
           setWatchedList(patch);
@@ -98,14 +103,18 @@ export function usePersonalLists(user: AppUser | null, onChange?: () => void) {
     setWatchlist(wlMapped);
     setWatchedList(wdMapped);
 
-    // Queue a one-time lazy backfill for rows missing rating or genre.
-    const stale: { tmdbId: number; table: "watchlist" | "watched" }[] = [
+    // Queue a one-time lazy backfill for rows missing a rating, or carrying
+    // fewer than two genres. The second case upgrades legacy rows saved before
+    // we captured the top two genres (and any single-genre film simply re-writes
+    // its one genre — harmless, and skipped for the rest of the session).
+    const isStale = (m: PersonalMovie) => !m.rating || splitGenres(m.genre).length < 2;
+    const stale: { tmdbId: number; table: "watchlist" | "watched"; rating: number; genre: string }[] = [
       ...wlMapped
-        .filter((m) => !m.rating || !m.genre)
-        .map((m) => ({ tmdbId: m.tmdbId, table: "watchlist" as const })),
+        .filter(isStale)
+        .map((m) => ({ tmdbId: m.tmdbId, table: "watchlist" as const, rating: m.rating, genre: m.genre })),
       ...wdMapped
-        .filter((m) => !m.rating || !m.genre)
-        .map((m) => ({ tmdbId: m.tmdbId, table: "watched" as const })),
+        .filter(isStale)
+        .map((m) => ({ tmdbId: m.tmdbId, table: "watched" as const, rating: m.rating, genre: m.genre })),
     ].filter((s) => !backfillTried.current.has(s.tmdbId));
     if (stale.length) {
       stale.forEach((s) => backfillTried.current.add(s.tmdbId));

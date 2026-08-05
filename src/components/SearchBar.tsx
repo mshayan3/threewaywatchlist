@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { searchMovies, prefetchMovieDetail } from "@/lib/tmdb";
-import { parseYear, posterGradient } from "@/lib/helpers";
+import { isUnreleased, parseYear, posterGradient } from "@/lib/helpers";
 import type { TmdbResult } from "@/lib/types";
 
 interface SearchBarProps {
@@ -126,8 +126,16 @@ export default function SearchBar({
               const id = String(r.id);
               const onWatchlist = watchlistIds.has(id);
               const onWatched = watchedIds.has(id);
+              const unreleased = isUnreleased(r.release_date);
               const already = onWatchlist || onWatched;
-              const label = onWatchlist ? "On watchlist" : onWatched ? "On watched" : "Add";
+              const disabled = already || unreleased;
+              const label = unreleased
+                ? "Unreleased"
+                : onWatchlist
+                  ? "On watchlist"
+                  : onWatched
+                    ? "On watched"
+                    : "Add";
               return (
                 <li
                   key={r.id}
@@ -157,18 +165,22 @@ export default function SearchBar({
                       <div className="truncate text-[.92rem] font-semibold">{r.title}</div>
                       <div className="text-[.82rem] text-dim">
                         {[year, r.genre].filter(Boolean).join(" · ")}
+                        {unreleased && (
+                          <span className="text-faint"> · Not released yet</span>
+                        )}
                       </div>
                     </div>
                   </Link>
                   <button
-                    disabled={already}
+                    disabled={disabled}
+                    title={unreleased ? "Not released yet — can't be added" : undefined}
                     onClick={() => {
                       onAdd(r);
                       clearSearch();
                     }}
                     className={
                       "flex-none rounded-lg px-3.5 py-2 text-[.84rem] font-bold transition-colors " +
-                      (already
+                      (disabled
                         ? "cursor-default bg-chip text-faint"
                         : "bg-accent text-accent-text active:scale-95")
                     }

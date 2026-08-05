@@ -68,11 +68,47 @@ export function inviteUrl(token: string): string {
   return `${origin}/join/${token}`;
 }
 
+// Compact human date for "watched together" labels: "today", "yesterday",
+// "3d ago" within the last week, otherwise an absolute "Aug 5" / "Aug 5, 2024".
+// Returns "" for a missing/unparseable timestamp.
+export function relativeDay(iso: string | null | undefined): string {
+  const s = (iso || "").trim();
+  if (!s) return "";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return "";
+  const today = new Date();
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((startOf(today) - startOf(d)) / 86400000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days}d ago`;
+  const sameYear = d.getFullYear() === today.getFullYear();
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+}
+
 // Extract a 4-digit year from a TMDB release_date without assuming the string
 // is always a well-formed YYYY-MM-DD. Returns "" when no leading year is found.
 export function parseYear(releaseDate: string | null | undefined): string {
   const m = /^(\d{4})/.exec((releaseDate || "").trim());
   return m ? m[1] : "";
+}
+
+// True when a release date is valid and strictly in the future — i.e. the film
+// isn't out yet, so it can't be added to a watchlist / watched list. An unknown
+// or unparseable date is treated as released (we don't block on missing data).
+export function isUnreleased(releaseDate: string | null | undefined): boolean {
+  const s = (releaseDate || "").trim();
+  if (!s) return false;
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime() > today.getTime();
 }
 
 // Split a stored genre string into its individual genres. Rows carry one or two

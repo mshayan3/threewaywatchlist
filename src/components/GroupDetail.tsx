@@ -46,6 +46,7 @@ export default function GroupDetail({
     <GroupView
       group={g.group}
       movies={g.movies}
+      watchedTogether={g.watchedTogether}
       members={g.members}
       myUserId={g.user?.id}
       stale={g.stale}
@@ -57,6 +58,8 @@ export default function GroupDetail({
       onRetry={g.loadGroupMovies}
       onAddToMine={g.onAddToMine}
       onRemoveFromMine={g.onRemoveFromMine}
+      onMarkWatchedTogether={g.onMarkWatchedTogether}
+      onUnmarkWatchedTogether={g.onUnmarkWatchedTogether}
       onRemoveMember={g.onRemoveMember}
       onLeave={g.onLeave}
       onDelete={g.onDelete}

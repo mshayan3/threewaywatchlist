@@ -65,29 +65,29 @@ function FilmTile({ id, title, year, poster, rating, role }: PersonCredit) {
   );
 }
 
-function Filmography({ title, credits }: { title: string; credits: PersonCredit[] }) {
-  if (credits.length === 0) return null;
+// The filmography grid for one role (acting or directing).
+function CreditsGrid({ credits }: { credits: PersonCredit[] }) {
   return (
-    <section className="mb-10">
-      <h2 className="m-0 mb-4 font-display text-[19px] font-semibold tracking-[-0.01em]">
-        {title} <span className="text-faint">· {credits.length}</span>
-      </h2>
-      <ul className="grid list-none grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4 p-0">
-        {credits.map((c) => (
-          <li key={`${c.id}-${c.role}`}>
-            <FilmTile {...c} />
-          </li>
-        ))}
-      </ul>
-    </section>
+    <ul className="grid list-none grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4 p-0">
+      {credits.map((c) => (
+        <li key={`${c.id}-${c.role}`}>
+          <FilmTile {...c} />
+        </li>
+      ))}
+    </ul>
   );
 }
+
+type Role = "acting" | "directing";
 
 export default function PersonDetailView({ id }: { id: string }) {
   const router = useRouter();
   const [person, setPerson] = useState<PersonDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [bioOpen, setBioOpen] = useState(false);
+  // Which filmography the toggle is showing. Defaulted to the department the
+  // person is known for once their credits load.
+  const [role, setRole] = useState<Role>("acting");
 
   useEffect(() => {
     let alive = true;
@@ -101,6 +101,16 @@ export default function PersonDetailView({ id }: { id: string }) {
       alive = false;
     };
   }, [id]);
+
+  // Pick the initial toggle once credits arrive: the known-for department when
+  // it has credits, else whichever list is non-empty.
+  useEffect(() => {
+    if (!person) return;
+    const hasActing = person.actingCredits.length > 0;
+    const hasDirecting = person.directingCredits.length > 0;
+    const preferDirecting = person.knownFor === "Directing";
+    setRole(preferDirecting && hasDirecting ? "directing" : hasActing ? "acting" : "directing");
+  }, [person]);
 
   if (error) {
     return (
@@ -136,12 +146,10 @@ export default function PersonDetailView({ id }: { id: string }) {
   const bioLong = person.biography.length > 600;
   const bioText = bioLong && !bioOpen ? person.biography.slice(0, 600).trimEnd() + "…" : person.biography;
 
-  // Lead with whichever department they're known for.
-  const directorFirst = person.knownFor === "Directing";
-  const director = (
-    <Filmography key="dir" title="As Director" credits={person.directingCredits} />
-  );
-  const actor = <Filmography key="act" title="As Actor" credits={person.actingCredits} />;
+  const hasActing = person.actingCredits.length > 0;
+  const hasDirecting = person.directingCredits.length > 0;
+  const bothRoles = hasActing && hasDirecting;
+  const activeCredits = role === "directing" ? person.directingCredits : person.actingCredits;
 
   return (
     <div className="view-anim">
@@ -220,12 +228,42 @@ export default function PersonDetailView({ id }: { id: string }) {
         </div>
       </div>
 
-      {person.directingCredits.length === 0 && person.actingCredits.length === 0 ? (
+      {!hasActing && !hasDirecting ? (
         <p className="text-[14px] text-faint">No film credits found.</p>
-      ) : directorFirst ? (
-        [director, actor]
       ) : (
-        [actor, director]
+        <section className="mb-10">
+          <div className="mb-4 flex items-center gap-4">
+            <h2 className="m-0 font-display text-[19px] font-semibold tracking-[-0.01em]">
+              Filmography <span className="text-faint">· {activeCredits.length}</span>
+            </h2>
+            {bothRoles && (
+              <div
+                className="inline-flex rounded-[10px] border border-border p-0.5"
+                role="tablist"
+                aria-label="Filmography role"
+              >
+                {(["acting", "directing"] as Role[]).map((r) => {
+                  const active = role === r;
+                  return (
+                    <button
+                      key={r}
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setRole(r)}
+                      className={
+                        "rounded-[8px] px-3.5 py-1.5 text-[13px] font-semibold transition-colors " +
+                        (active ? "bg-chip text-text" : "text-faint hover:text-text")
+                      }
+                    >
+                      {r === "acting" ? "As Actor" : "As Director"}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <CreditsGrid credits={activeCredits} />
+        </section>
       )}
     </div>
   );

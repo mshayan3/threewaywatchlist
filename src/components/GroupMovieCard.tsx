@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { colorFor, initials, posterGradient } from "@/lib/helpers";
+import { colorFor, initials, posterGradient, relativeDay } from "@/lib/helpers";
 import { prefetchMovieDetail } from "@/lib/tmdb";
 import WatchCountBadge from "@/components/WatchCountBadge";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -10,14 +10,21 @@ import type { GroupMovie, MoviePerson } from "@/lib/types";
 
 interface GroupMovieCardProps {
   movie: GroupMovie;
-  // "common" = nobody has watched it; "watched" = at least one member has.
+  // "common" = a watch-together candidate (2+ members want it, not yet seen as
+  // a group); "watched" = the group logged it as watched together.
   variant: "common" | "watched";
   isMine: boolean; // already on the caller's personal watchlist
   iWatched: boolean; // caller has personally watched it
   watchCount: number; // caller's own watch count for this movie (0 = never)
   myUserId?: string; // to label the caller as "You" in the who-has row
+  // Watched variant only: when the group logged it (ISO) — for the date label.
+  watchedAt?: string;
   onAddToMine: (m: GroupMovie) => void;
   onRemoveFromMine: (m: GroupMovie) => void;
+  // Common variant: log the film as watched together by the group.
+  onMarkWatched?: (m: GroupMovie) => void;
+  // Watched variant: undo the watched-together entry.
+  onUnmarkWatched?: (m: GroupMovie) => void;
 }
 
 function OverlayAvatars({ people }: { people: MoviePerson[] }) {
@@ -94,14 +101,20 @@ export default function GroupMovieCard({
   iWatched,
   watchCount,
   myUserId,
+  watchedAt,
   onAddToMine,
   onRemoveFromMine,
+  onMarkWatched,
+  onUnmarkWatched,
 }: GroupMovieCardProps) {
   const confirmDialog = useConfirm();
   const hasPoster = !!movie.poster;
   const poster = hasPoster ? `https://image.tmdb.org/t/p/w300${movie.poster}` : "";
   const meta = [movie.year, movie.genre].filter(Boolean).join(" · ");
   const people = variant === "common" ? movie.queuedBy : movie.watchedBy;
+  // Watched variant: who logged it (first of watchedBy) + when.
+  const marker = variant === "watched" ? movie.watchedBy[0] : undefined;
+  const watchedLabel = variant === "watched" ? relativeDay(watchedAt) : "";
 
   const handleRemoveFromMine = async () => {
     const ok = await confirmDialog({
@@ -167,29 +180,71 @@ export default function GroupMovieCard({
         </Link>
         <div className="mb-3 mt-0.5 text-[13px] text-faint">{meta}</div>
 
-        {variant === "common" && <WhoHasRow people={movie.queuedBy} myUserId={myUserId} />}
+        {variant === "common" ? (
+          <>
+            <WhoHasRow people={movie.queuedBy} myUserId={myUserId} />
 
-        {iWatched ? (
-          <div className="w-full cursor-default rounded-[9px] border border-border py-2.5 text-center text-[13.5px] font-semibold text-faint">
-            ✓ Seen it
-          </div>
-        ) : isMine ? (
-          <button
-            onClick={handleRemoveFromMine}
-            title={`Remove ${movie.title} from my watchlist`}
-            className="group/rm w-full rounded-[9px] border border-border bg-chip py-2.5 text-center text-[13.5px] font-semibold text-chipink transition-colors hover:border-accent2 hover:text-text"
-          >
-            <span className="group-hover/rm:hidden">✓ On your list</span>
-            <span className="hidden group-hover/rm:inline">✕ Remove from mine</span>
-          </button>
+            {iWatched ? (
+              <div className="w-full cursor-default rounded-[9px] border border-border py-2.5 text-center text-[13.5px] font-semibold text-faint">
+                ✓ Seen it
+              </div>
+            ) : isMine ? (
+              <button
+                onClick={handleRemoveFromMine}
+                title={`Remove ${movie.title} from my watchlist`}
+                className="group/rm w-full rounded-[9px] border border-border bg-chip py-2.5 text-center text-[13.5px] font-semibold text-chipink transition-colors hover:border-accent2 hover:text-text"
+              >
+                <span className="group-hover/rm:hidden">✓ On your list</span>
+                <span className="hidden group-hover/rm:inline">✕ Remove from mine</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => onAddToMine(movie)}
+                title={`Add ${movie.title} to my watchlist`}
+                className="w-full rounded-[9px] border border-border py-2.5 text-[13.5px] font-semibold text-text transition-colors hover:border-accent2"
+              >
+                + Add to your list
+              </button>
+            )}
+
+            {onMarkWatched && (
+              <button
+                onClick={() => onMarkWatched(movie)}
+                title="Log this as watched together by the group"
+                className="mt-2 w-full rounded-[9px] border border-dashed border-border py-2 text-center text-[12.5px] font-semibold text-faint transition-colors hover:border-accent2 hover:text-text"
+              >
+                ✓ We watched this together
+              </button>
+            )}
+          </>
         ) : (
-          <button
-            onClick={() => onAddToMine(movie)}
-            title={`Add ${movie.title} to my watchlist`}
-            className="w-full rounded-[9px] border border-border py-2.5 text-[13.5px] font-semibold text-text transition-colors hover:border-accent2"
-          >
-            + Add to your list
-          </button>
+          <>
+            <div
+              className="mb-3 flex items-center gap-1.5 text-[12px] text-faint"
+              title={
+                marker?.name
+                  ? `Logged by ${marker.name}${watchedLabel ? ` · ${watchedLabel}` : ""}`
+                  : undefined
+              }
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="min-w-0 truncate">
+                Watched together{watchedLabel ? ` · ${watchedLabel}` : ""}
+              </span>
+            </div>
+
+            {onUnmarkWatched && (
+              <button
+                onClick={() => onUnmarkWatched(movie)}
+                title="Move back to Common"
+                className="w-full rounded-[9px] border border-border py-2.5 text-[13.5px] font-semibold text-faint transition-colors hover:border-accent2 hover:text-text"
+              >
+                Undo
+              </button>
+            )}
+          </>
         )}
       </div>
     </li>

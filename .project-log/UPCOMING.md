@@ -3,6 +3,8 @@
 _Triaged: do the top items first. The full engineering backlog lives in [TODO.md](../TODO.md); this file tracks the near-term priorities._
 
 ## 🔴 Now (blocking / next up)
+- [ ] **Run `sql/group-watched-migration.sql` in Supabase** — required before the group Watched tab (watched-together) works; adds `group_watched` + its RPCs.
+- [ ] Verify signed in (needs your login): group Common = 2+ members, "We watched this together" → Watched tab (who + date + Undo), realtime across members, and the reworked header (⋯ on the right, members expand under the name)
 - [ ] Verify signed in (needs your login): kick-member panel, atomic watched-removal, "no results" state, 6-per-row grid, inline sidebar search, compact Home, Watched sort
       _(schema.sql re-run ✓ 2026-08-03; invite link ✓ verified working end to end)_
 
@@ -26,7 +28,7 @@ _Root cause: every page is client-rendered with a spinner→fetch waterfall and 
 
 ## 🟢 Later / nice-to-have
 - [ ] **Server-render public detail pages** _(deferred from the Perf tier by decision 2026-08-05 — largest/riskiest change)_ — move `/movie/[id]` and `/person/[id]` off `"use client"`: fetch TMDB on the server, stream HTML, hydrate only the personal-list buttons as client islands. Kills the spinner-then-fetch waterfall — the change that most closes the gap with Letterboxd.
-- [ ] _Optional:_ backfill legacy single-genre watchlist/watched rows to two genres (top-2 only applies to new adds; the lazy backfill in `usePersonalLists` only fires for rows missing rating/genre entirely).
+- [x] **Backfill legacy single-genre rows to two genres** ✅ 2026-08-05 — the lazy backfill in `usePersonalLists` now fires for rows with <2 genres (writing only when it actually improves); movie-detail adds also store the top two.
 - [ ] **Verify signed in (needs your login):** the personal actions that only signed-in users hit — add / mark-watched on `/movie/[id]`, and search-Add landing on the watchlist. _(Public browsing of home, search, movie & person pages is now verified live signed-out: 200s, rows populate, gated routes 307 → login.)_
 - [ ] _Optional polish:_ on the movie page, the signed-out Add / Mark-watched buttons route to `/login` without a `?next` back to the film — could thread `?next=/movie/<id>` so they return to the same page after signing in.
 - [ ] _Optional:_ pull the `?list=` (discover) + detail TMDB fetches through `next: { revalidate }` caching (see the Performance tier) now that they're the public entry point and hit on every cold visit.
